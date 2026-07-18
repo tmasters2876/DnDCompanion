@@ -2,6 +2,7 @@ import React from 'react';
 import Markdown from '../Markdown.jsx';
 import { useRoller } from '../dice/RollContext.jsx';
 import { fmtMod, abilityMod } from '../dice/engine.js';
+import { actionMechanics } from './mechanics.js';
 
 const CR_NAMES = { 0.125: '1/8', 0.25: '1/4', 0.5: '1/2' };
 const crText = (cr) => CR_NAMES[cr] ?? String(cr);
@@ -9,7 +10,8 @@ const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
 function ActionEntry({ monster, entry, group }) {
   const { rollDice } = useRoller();
-  const a = entry.attack;
+  const mechanics = actionMechanics(entry);
+  const a = mechanics.attack;
   const rollAttack = () => rollDice({
     label: `${monster.name}: ${entry.name}`,
     sublabel: 'to hit',
@@ -27,7 +29,7 @@ function ActionEntry({ monster, entry, group }) {
         {group && <em className="muted"> ({group})</em>}.
       </span>{' '}
       <Markdown text={entry.text} />
-      {(a?.bonus != null || a?.damage?.length > 0) && (
+      {(a?.bonus != null || a?.damage?.length > 0 || mechanics.damage.length > 0 || mechanics.healing.length > 0 || mechanics.save) && (
         <span className="dmgbuttons">
           {a?.bonus != null && (
             <button className="rollable atk" title="Roll to hit (asks advantage/disadvantage)" onClick={rollAttack}>
@@ -46,6 +48,17 @@ function ActionEntry({ monster, entry, group }) {
               })}
             >{d.dice} {d.type}</button>
           ))}
+          {!a && mechanics.damage.map((d, i) => (
+            <button key={`fallback-${i}`} className="rollable dmg" title="Roll damage" onClick={() => rollDice({
+              label: `${monster.name}: ${entry.name}`, sublabel: d.type, formula: d.formula,
+            })}>{d.formula} {d.type}</button>
+          ))}
+          {mechanics.healing.map((heal, i) => (
+            <button key={`heal-${i}`} className="rollable heal" title="Roll healing" onClick={() => rollDice({
+              label: `${monster.name}: ${entry.name}`, sublabel: 'healing', formula: heal.formula,
+            })}>{heal.formula} healing</button>
+          ))}
+          {mechanics.save && <span className="savechip">{mechanics.save.ability.toUpperCase()} save DC {mechanics.save.dc}</span>}
         </span>
       )}
     </div>
@@ -144,6 +157,9 @@ export default function StatBlock({ entry }) {
       <Section monster={entry} title="Bonus Actions" entries={d.bonusActions} />
       <Section monster={entry} title="Reactions" entries={d.reactions} />
       <Section monster={entry} title="Legendary Actions" entries={d.legendary} />
+      {!['traits', 'actions', 'bonusActions', 'reactions', 'legendary'].some((group) => d[group]?.length) && entry.text && (
+        <Section monster={entry} title="Mechanics" entries={[{ name: 'Combat', text: entry.text }]} />
+      )}
     </div>
   );
 }

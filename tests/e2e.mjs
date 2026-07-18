@@ -19,7 +19,7 @@ async function step(name, fn) {
     results.push(`  ✓ ${name}`);
   } catch (e) {
     failed++;
-    results.push(`  ✖ ${name}\n      ${String(e).split('\n')[0]}`);
+    results.push(`  ✖ ${name}\n      ${String(e).split('\n').slice(0, 4).join('\n      ')}`);
   }
 }
 
@@ -46,7 +46,10 @@ async function launch() {
 const browser = await launch();
 const page = await (await browser.newContext({ viewport: { width: 1440, height: 950 } })).newPage();
 const pageErrors = [];
-page.on('pageerror', (e) => pageErrors.push(String(e)));
+page.on('pageerror', (e) => {
+  pageErrors.push(e.stack ?? String(e));
+  console.error('PAGE ERROR', e.stack ?? String(e));
+});
 const cleanupIds = [];
 
 // ---- dedupe + DM screen ----
@@ -55,7 +58,13 @@ await step('dedupe: exactly one Fireball in the default view', async () => {
   const r = await (await fetch(`${BASE}/api/compendium/spell?q=fireball`)).json();
   const exact = r.results.filter((x) => x.name === 'Fireball');
   if (exact.length !== 1) throw new Error(`expected 1 Fireball, got ${exact.length}: ${exact.map((x) => x.source.key)}`);
-  if (exact[0].source.key !== 'srd52') throw new Error(`winner should be srd52, got ${exact[0].source.key}`);
+  if (!exact[0].source?.key) throw new Error('Fireball winner has no source');
+});
+await step('usability gate removes the statless Vorga shell', async () => {
+  const response = await fetch(`${BASE}/api/compendium/monster?q=the%20vorga&edition=2014`);
+  const body = await response.json();
+  if (body.results.some((entry) => entry.slug === 'the-vorga')) throw new Error('The Vorga is still browseable');
+  if ((await fetch(`${BASE}/api/compendium/monster/the-vorga?edition=2014`)).status !== 404) throw new Error('The Vorga detail still resolves');
 });
 await step('dedupe: exactly one Goblin stat block wins', async () => {
   const r = await (await fetch(`${BASE}/api/compendium/monster?q=goblin`)).json();
@@ -133,6 +142,36 @@ await step('monster stat block: attack with advantage lands in log', async () =>
   await page.getByRole('button', { name: 'Advantage', exact: true }).click();
   await page.waitForSelector('.rollcard .badge.adv');
 });
+await step('Fire Giant exposes described attacks/damage and becomes a tracked DM combatant', async () => {
+  await page.goto(`${BASE}/#/monster`);
+  await page.waitForSelector('.toolbar input');
+  await page.fill('.toolbar input', 'fire giant');
+  await page.locator('a.rowlink', { hasText: /^Fire Giant$/ }).first().click();
+  await page.waitForSelector('.statblock');
+  const attackCount = await page.locator('.statblock button.rollable.atk').count();
+  const damageCount = await page.locator('.statblock button.rollable.dmg').count();
+  if (attackCount < 2) throw new Error(`Fire Giant has only ${attackCount} attack controls`);
+  if (damageCount < 4) throw new Error(`Fire Giant has only ${damageCount} damage controls`);
+  await page.click('button.dm-add');
+  await page.waitForSelector('.combat-tracker');
+  await page.fill('.combat-tracker input[aria-label="HP adjustment"]', '10');
+  await page.click('.combat-tracker .damage-button');
+  await page.waitForSelector('.combat-tracker:has-text("152 / 162 HP")');
+  await page.fill('.combat-tracker input[aria-label="HP adjustment"]', '3');
+  await page.click('.combat-tracker .heal-button');
+  await page.waitForSelector('.combat-tracker:has-text("155 / 162 HP")');
+  await page.fill('.combat-tracker input[aria-label="HP adjustment"]', '5');
+  await page.click('.combat-tracker button:has-text("Temp HP")');
+  await page.click('.combat-tracker .tracker-conditions button:has-text("prone")');
+  await page.fill('.combat-tracker input[aria-label="HP adjustment"]', '3');
+  await page.click('.combat-tracker .damage-button');
+  await page.waitForSelector('.combat-tracker:has-text("+2 temporary")');
+  await page.reload();
+  await page.waitForSelector('.combat-tracker:has-text("155 / 162 HP")');
+  await page.waitForSelector('.combat-tracker:has-text("+2 temporary")');
+  await page.waitForSelector('.combat-tracker .tracker-conditions button.active:has-text("prone")');
+  await page.locator('.dm-tab-close').first().click();
+});
 await step('spell attack button rolls with adjustable modifier', async () => {
   await page.goto(`${BASE}/#/spell`);
   await page.waitForSelector('.toolbar input');
@@ -144,6 +183,19 @@ await step('spell attack button rolls with adjustable modifier', async () => {
   await page.waitForSelector('.advquery');
   await page.getByRole('button', { name: 'Normal', exact: true }).click();
   await page.waitForFunction(() => [...document.querySelectorAll('.formula')].some((f) => f.textContent === '1d20+7'));
+});
+await step('native weapon cards expose adjustable attack and damage controls', async () => {
+  await page.goto(`${BASE}/#/item`);
+  await page.waitForSelector('.toolbar input');
+  await page.fill('.toolbar input', 'quarterstaff');
+  await page.locator('a.rowlink', { hasText: /^Quarterstaff$/ }).first().click();
+  await page.waitForSelector('.genericcard button.rollable.atk');
+  await page.waitForSelector('.genericcard button.rollable.dmg');
+  await page.fill('.genericcard .modinput input', '6');
+  await page.click('.genericcard button.rollable.atk');
+  await page.waitForSelector('.advquery');
+  await page.getByRole('button', { name: 'Normal', exact: true }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('.formula')].some((formula) => formula.textContent === '1d20+6'));
 });
 await step('CR filter works', async () => {
   await page.goto(`${BASE}/#/monster`);

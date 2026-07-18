@@ -11,7 +11,11 @@ const POINT_COST = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
 const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 const ABILITY_NAMES = { str: 'Strength', dex: 'Dexterity', con: 'Constitution', int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' };
 
-const srdRank = (e) => (e.source?.key === 'srd52' ? 0 : e.source?.key === 'srd51' ? 1 : 2);
+const sourceKeys = (entry) => new Set([entry.source?.key, ...(entry.provenance ?? [])].filter(Boolean));
+const srdRank = (entry) => {
+  const keys = sourceKeys(entry);
+  return keys.has('srd52') ? 0 : keys.has('srd51') ? 1 : 2;
+};
 
 // Search box + SRD-first ordering + capped grid — keeps huge imported lists usable.
 function PickList({ items, isActive, onPick, cap = 48, children }) {

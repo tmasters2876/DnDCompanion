@@ -91,6 +91,19 @@ button.rollable.dmg {
 }
 button.rollable.dmg:hover { border-color: var(--accent); }
 button.rollable.dmg.subtle { opacity: 0.75; font-size: 0.78rem; }
+button.rollable.heal {
+  border: 1px solid var(--green); border-radius: 3px; padding: 0.1rem 0.45rem;
+  margin: 0 0.25rem 0.2rem 0; color: #72c895; background: rgba(76,154,110,0.12);
+}
+.savechip {
+  display: inline-block; border: 1px solid var(--gold-dim); border-radius: 4px;
+  padding: 0.08rem 0.4rem; color: var(--gold); font-size: 0.76rem; margin: 0 0.25rem 0.2rem 0;
+}
+.mechanicbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; margin-bottom: 0.7rem; }
+.structured-summary { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.25rem 0.8rem; margin: 0.5rem 0 0.8rem; }
+.structured-summary dt { color: var(--muted); font-weight: 700; text-transform: capitalize; }
+.structured-summary dd { margin: 0; }
+.dm-add { margin-left: 0.65rem; padding: 0.28rem 0.7rem; }
 
 /* panels */
 .detail, .spellcard, .classpage, .panel, .wizhint {
@@ -247,6 +260,13 @@ input.charname:hover, input.charname:focus { border-bottom-color: var(--gold-dim
 .statpill.rollable:hover { border-color: var(--accent); }
 .statpill.rollable .statval { color: var(--red-text); }
 .statpill.hp .statval { display: flex; align-items: center; gap: 0.3rem; justify-content: center; }
+.statpill.hp { min-width: 11rem; }
+.sheet-hp-adjust { display: flex; gap: 0.2rem; align-items: center; margin-top: 0.3rem; }
+.sheet-hp-adjust input { width: 3.2rem; padding: 0.16rem 0.25rem; }
+.sheet-hp-adjust button {
+  background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 3px; cursor: pointer; font-size: 0.62rem; padding: 0.18rem 0.3rem;
+}
 .hpbtn {
   background: var(--panel); color: var(--text); border: 1px solid var(--border);
   border-radius: 3px; width: 1.35rem; height: 1.35rem; cursor: pointer; line-height: 1;
@@ -479,7 +499,7 @@ nav.types.primary button.active {
 /* ---------- DM screen ---------- */
 .dmscreen { margin-top: 0.5rem; }
 .dm-toolbar { display: flex; gap: 0.8rem; align-items: flex-start; flex-wrap: wrap; }
-.dm-kinds { display: flex; gap: 0.35rem; }
+.dm-kinds { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 .dm-kinds button {
   background: var(--panel); color: var(--muted); border: 1px solid var(--border);
   border-radius: 9px; padding: 0.4rem 0.9rem; cursor: pointer; font-variant: small-caps;
@@ -515,6 +535,26 @@ nav.types.primary button.active {
 .dm-tab-close:hover { color: var(--red-text); }
 .dm-empty { max-width: 34rem; }
 .dm-content { margin-top: 0.2rem; }
+.combat-tracker {
+  max-width: 52rem; margin: 0.45rem 0; padding: 0.65rem 0.8rem;
+  border: 1px solid var(--gold-dim); border-radius: 8px; background: var(--panel);
+}
+.combat-vitals { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.combat-vitals strong { color: var(--gold); font-size: 1.05rem; min-width: 7rem; }
+.combat-vitals input { width: 4rem; }
+.combat-vitals > button:not(.rollable) {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 5px; padding: 0.3rem 0.55rem; cursor: pointer;
+}
+.combat-vitals .damage-button { border-color: var(--accent) !important; color: var(--red-text) !important; }
+.combat-vitals .heal-button { border-color: var(--green) !important; color: #72c895 !important; }
+.temp-hp { color: #72aee6; font-size: 0.8rem; }
+.tracker-conditions { display: flex; flex-wrap: wrap; gap: 0.2rem; margin-top: 0.5rem; }
+.tracker-conditions button {
+  background: var(--panel2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.08rem 0.48rem; cursor: pointer; font-size: 0.68rem;
+}
+.tracker-conditions button.active { color: var(--gold); border-color: var(--gold); background: #2b2418; }
 
 /* explicit attack buttons — unmissable, everywhere an attack roll applies */
 button.rollable.atk {

@@ -19,10 +19,14 @@ Execution discipline:
    search first, never rely on alphabetical position).
 4. Run `npm test` yourself before handing off; fix what you broke. The full e2e gate
    belongs to test-warden, but don't hand over something you know is red.
-5. Playability is part of done: anything rollable gets a button wired to the shared
-   roll log (`useRoller`); every d20 roll queries advantage; imported data is never
-   trusted to be well-shaped (guard against objects where strings are expected).
-6. Compliance: never add code paths that fetch or bundle copyrighted content; user
-   content directories stay gitignored.
+5. Playability is part of done: anything described as an attack, damage, healing, or
+   save gets a visible control wired to the shared roll log; every d20 roll queries
+   advantage. Test at least one non-SRD/local-import example, not only clean fixtures.
+   DM-console combatants must independently track HP, temporary HP, and conditions.
+6. Imported data is never trusted to be well-shaped. Mechanical records that cannot
+   render a useful/playable card must be excluded from public browsing unless created
+   in the app; never paper over a blank card with a name alone.
+7. Compliance: locally authorized inputs may be processed, but personal source and
+   normalized files stay gitignored and are not published by a general push request.
 
 Report what you changed file-by-file, which tests you added, and what you ran.

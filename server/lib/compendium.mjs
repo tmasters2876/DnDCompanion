@@ -86,6 +86,7 @@ function mergeAbsent(primary, secondary) {
   if (Array.isArray(primary) || Array.isArray(secondary) || !primary || !secondary || typeof primary !== 'object' || typeof secondary !== 'object') return primary;
   const merged = structuredClone(primary);
   for (const [key, value] of Object.entries(secondary)) {
+    if (key === 'partial') continue; // completeness belongs to the winning record only
     if (!Object.hasOwn(merged, key)) merged[key] = structuredClone(value);
     else if (merged[key] && value && !Array.isArray(merged[key]) && !Array.isArray(value)
       && typeof merged[key] === 'object' && typeof value === 'object') merged[key] = mergeAbsent(merged[key], value);
@@ -145,6 +146,48 @@ export function choosePreferred(a, b) {
   };
 }
 
+const hasText = (entry) => (entry.text ?? '').trim().length >= 10;
+const hasNumber = (value) => typeof value === 'number' && Number.isFinite(value);
+const hasMeaningfulData = (data) => Object.entries(data ?? {}).some(([key, value]) => {
+  if (['partial', 'provenance', 'identity', 'lore', 'markdownFile', 'headingPath', 'contentHash', 'parserVersion'].includes(key)) return false;
+  if (value == null || value === '' || value === false) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.values(value).some((child) => child != null && child !== '' && child !== false && (!Array.isArray(child) || child.length));
+  return true;
+});
+
+// The public compendium is an at-the-table tool, not a raw-source browser. Keep
+// locally created homebrew, but suppress imported shells that cannot render a
+// useful card or drive the mechanics expected for their type.
+export function isUsableEntry(entry) {
+  if (!entry?.type || !entry?.name || entry.source?.key === 'homebrew') return !!entry?.type && !!entry?.name;
+  const d = entry.data ?? {};
+  if (entry.type === 'monster') {
+    return hasNumber(d.ac)
+      && (hasNumber(d.hp?.average) || !!d.hp?.formula)
+      && ['str', 'dex', 'con', 'int', 'wis', 'cha'].every((ability) => hasNumber(d.abilities?.[ability]))
+      && (hasText(entry) || ['traits', 'actions', 'bonusActions', 'reactions', 'legendary'].some((group) => d[group]?.length));
+  }
+  if (entry.type === 'spell') {
+    return hasNumber(d.level) && !!d.school && !!d.castingTime && !!d.range
+      && !!d.components && !!d.duration && hasText(entry);
+  }
+  if (entry.type === 'class') return hasNumber(d.hitDie) && d.levels?.length === 20;
+  if (entry.type === 'subclass') return !!d.class && (d.levels?.length > 0 || hasText(entry));
+  if (entry.type === 'species') return !!d.size && hasNumber(d.speed) && d.traits?.length > 0;
+  if (entry.type === 'background') return hasText(entry) || d.skills?.length > 0 || !!d.feature || !!d.equipment;
+  if (entry.type === 'item') return hasText(entry) || !!d.weapon?.damage || hasNumber(d.armor?.ac);
+  if (entry.type === 'object') return hasText(entry)
+    || (hasNumber(d.properties?.ac) && hasNumber(d.properties?.hp));
+  if (entry.type === 'vehicle') return hasText(entry)
+    || (hasNumber(d.properties?.ac) && hasNumber(d.properties?.hp));
+  if (entry.type === 'legendary-group' || entry.type === 'card') return hasText(entry);
+  if (entry.type === 'feature' || entry.type === 'rule') return hasText(entry);
+  if (entry.type === 'table') return d.columns?.length > 1 && d.rows?.length > 0;
+  if (entry.type === 'book' || entry.type === 'adventure') return hasText(entry) || d.sections?.some((section) => section.text?.trim());
+  return hasText(entry) || hasMeaningfulData(d);
+}
+
 export function loadCompendium(dataDir) {
   const byId = new Map();
   const layers = [
@@ -196,12 +239,32 @@ export function loadCompendium(dataDir) {
   }
 
   const byType = new Map();
-  for (const { entry } of structural.values()) {
+  const excludedByType = {};
+  const usableAlternatives = new Map();
+  for (const candidate of byId.values()) {
+    if (!isUsableEntry(candidate)) continue;
+    const identity = `${candidate.type}/${candidate.slug}/${candidate.edition}`;
+    if (!usableAlternatives.has(identity)) usableAlternatives.set(identity, []);
+    usableAlternatives.get(identity).push(candidate);
+  }
+  let replacedUnusable = 0;
+  for (const { entry: winner } of structural.values()) {
+    let entry = winner;
+    if (!isUsableEntry(entry)) {
+      const alternatives = usableAlternatives.get(`${entry.type}/${entry.slug}/${entry.edition}`) ?? [];
+      if (alternatives.length) {
+        entry = alternatives.slice(1).reduce((best, candidate) => choosePreferred(best, candidate), alternatives[0]);
+        replacedUnusable++;
+      } else {
+        excludedByType[entry.type] = (excludedByType[entry.type] ?? 0) + 1;
+        continue;
+      }
+    }
     if (!byType.has(entry.type)) byType.set(entry.type, []);
     byType.get(entry.type).push(entry);
   }
   for (const list of byType.values()) list.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-  return { byId, byType, dedupe: { rawIds: byId.size, identityDuplicates, structuralDuplicates } };
+  return { byId, byType, dedupe: { rawIds: byId.size, identityDuplicates, structuralDuplicates, replacedUnusable, excludedUnusable: Object.values(excludedByType).reduce((sum, count) => sum + count, 0), excludedByType } };
 }
 
 // Edition layering: same (type, slug) in both editions resolves to 2024 unless
@@ -246,6 +309,7 @@ export function summarize(entry) {
     name: entry.name,
     edition: entry.edition,
     source: entry.source,
+    provenance: entry.data?.provenance ?? [entry.source?.key].filter(Boolean),
     ...(SUMMARY_FIELDS[entry.type]?.(entry.data) ?? {}),
   };
 }

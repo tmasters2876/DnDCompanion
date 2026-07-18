@@ -18,10 +18,14 @@ Audit method — evidence, not vibes:
 2. **Playability pass** — for each affected surface ask: can a DM or player act on
    this in one click? Every attack roll needs an attack button; every save-based
    effect a visible DC; every d20 roll the adv/dis query; every expendable a tracker.
-   A number displayed but not rollable is a finding.
+   A number displayed but not rollable is a finding. On the DM console, every separate
+   combatant instance needs persistent HP/damage/healing/temp-HP and condition state.
 3. **Data semantics** — spot-check normalized entries against schema
    (docs/SCHEMA.md): slot tables ascending, CR/XP consistent, damage dice parseable,
-   edition tags correct, dedupe picking the official-closest source.
+   edition tags correct, dedupe following the Markdown-first completeness policy.
+   Run checks over the merged local compendium as well as shipped SRD. Explicitly probe
+   a messy emphasized action (`_Attack Roll:_`), a multi-type damage action, and a
+   statless/partial record; clean SRD-only spot checks are insufficient.
 4. **Edition discipline** — 2024 rules primary, 2014 behaved as tagged legacy;
    mixed-edition characters must resolve 2024-first.
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Browser from './compendium/Browser.jsx';
 import Detail from './compendium/Detail.jsx';
 import CharacterList from './sheet/CharacterList.jsx';
@@ -29,6 +29,7 @@ const parseHash = () => {
 export default function App() {
   const [types, setTypes] = useState({});
   const [route, setRoute] = useState(parseHash);
+  const [dmPending, setDmPending] = useState(null);
 
   useEffect(() => {
     fetch('/api/compendium/types').then((r) => r.json()).then(setTypes);
@@ -42,6 +43,11 @@ export default function App() {
   };
 
   const grand = Object.values(types).reduce((a, b) => a + b, 0);
+  const addToDm = (entry) => {
+    setDmPending(entry);
+    go('dm');
+  };
+  const clearDmPending = useCallback(() => setDmPending(null), []);
 
   return (
     <RollProvider>
@@ -79,7 +85,7 @@ export default function App() {
           )}
           <main>
             {route.type === 'dm' ? (
-              <DMScreen />
+              <DMScreen pending={dmPending} onPendingHandled={clearDmPending} />
             ) : route.type === 'homebrew' ? (
               <Homebrew />
             ) : route.type === 'characters' ? (
@@ -95,6 +101,7 @@ export default function App() {
                 edition={route.edition}
                 onBack={() => go(route.type)}
                 onSwitchEdition={(ed) => go(route.type, route.slug, ed)}
+                onAddToDm={addToDm}
               />
             ) : (
               <Browser type={route.type} onOpen={(r) => go(r.type, r.slug, r.edition === '2014' ? '2014' : '')} />

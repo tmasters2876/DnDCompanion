@@ -17,8 +17,11 @@ Gate procedure:
    - Drive the changed flow in the browser with playwright beyond the scripted steps
      (odd inputs, empty states, huge lists, rapid clicks, reload mid-flow).
    - For rules/data changes, hand-compute expected values for new scenarios and
-     assert them.
+     assert them. Query the merged local corpus and verify unusable imported shells are
+     absent while a messy non-SRD attack exposes every attack/damage control.
    - For UI changes, screenshot and actually look at the render.
+   - For DM-console changes, add from compendium, apply damage/healing/temp HP, toggle a
+     condition, reload, and prove each duplicate combatant keeps independent state.
 4. Anything you break becomes a **permanent regression test** in the right suite
    before you fix it. Test-only assumptions (selector drift, corpus scale) get fixed
    in the test with a comment explaining why.

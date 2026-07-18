@@ -117,7 +117,7 @@ function put(type, name, data, textValue, file, options = {}) {
 }
 
 function field(raw, label) {
-  return decode(new RegExp(`\\*\\*${label}\\*\\*\\s*([^<\\n]+)`, 'i').exec(raw)?.[1] ?? '').trim() || null;
+  return decode(new RegExp(`\\*\\*${label}:?\\*\\*\\s*([^<\\n]+)`, 'i').exec(raw)?.[1] ?? '').trim() || null;
 }
 function listField(raw, label) {
   return String(field(raw, label) ?? '').split(/,|;/).map((value) => slugify(value.replace(/[+−-]?\d+.*$/, ''))).filter(Boolean);

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import Markdown from '../Markdown.jsx';
 import StatBlock from './StatBlock.jsx';
 import SpellCard from './SpellCard.jsx';
 import ClassPage from './ClassPage.jsx';
+import GenericCard from './GenericCard.jsx';
 
-export default function Detail({ type, slug, edition, onBack, onSwitchEdition }) {
+export default function Detail({ type, slug, edition, onBack, onSwitchEdition, onAddToDm }) {
   const [entry, setEntry] = useState(null);
   const [error, setError] = useState(null);
 
@@ -23,12 +23,7 @@ export default function Detail({ type, slug, edition, onBack, onSwitchEdition })
     type === 'monster' && !entry.data?.partial ? <StatBlock entry={entry} /> :
     type === 'spell' ? <SpellCard entry={entry} /> :
     type === 'class' && !entry.data?.partial ? <ClassPage entry={entry} /> :
-    (
-      <div className="detail">
-        <h2>{entry.name}</h2>
-        <Markdown text={entry.text || '(no text)'} />
-      </div>
-    );
+    <GenericCard entry={entry} />;
 
   return (
     <div>
@@ -36,6 +31,7 @@ export default function Detail({ type, slug, edition, onBack, onSwitchEdition })
         <a className="rowlink" onClick={onBack}>← back to list</a>
         <span className="badge">{entry.source.name}</span>
         {entry.edition === '2014' && <span className="badge legacy">legacy</span>}
+        <button className="bigbutton dm-add" onClick={() => onAddToDm(entry)}>＋ Add to DM console</button>
         {entry.otherEditions?.map((e) => (
           <a key={e.id} className="rowlink badge" onClick={() => onSwitchEdition(e.edition)}>
             view {e.edition} version

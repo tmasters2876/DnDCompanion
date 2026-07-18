@@ -77,6 +77,12 @@ test('detail 404s cleanly', async () => {
   assert.equal(status, 404);
 });
 
+test('statless imported mechanical shells are excluded from public browsing', async () => {
+  assert.equal((await get('/compendium/monster/the-vorga?edition=2014')).status, 404);
+  const { body } = await get('/compendium/monster?q=the%20vorga&edition=2014');
+  assert.ok(!body.results.some((entry) => entry.slug === 'the-vorga'));
+});
+
 test('characters: full CRUD cycle with 404 handling', async () => {
   const created = await fetch(`${API}/characters`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
@@ -145,6 +151,8 @@ test('audit endpoint exposes importer gaps and boot dedupe metrics', async () =>
   assert.ok(body.summary.copies.found >= body.summary.copies.resolved);
   assert.equal(typeof body.unsupportedByKey, 'object');
   assert.ok(body.dedupeAtBoot.rawIds > 0);
+  assert.ok(body.dedupeAtBoot.excludedUnusable > 0);
+  assert.ok(body.dedupeAtBoot.excludedByType.monster > 0);
   assert.ok(body.markdown?.summary.filesScanned > 0);
   assert.equal(body.markdown.sourceDirectory, 'data/pdfs');
   assert.doesNotMatch(JSON.stringify(body), /\/Users\/|sourceDirectory":"\//);

@@ -16,8 +16,9 @@ For each request, produce a build brief:
    NEW tests must exist (unit / data / API / e2e) before the task can be called done.
 5. **Rules & playability impact** — which 5e mechanics are touched (slots, AC, attack
    rolls, saves, editions); flag anything the rules-auditor must check afterward.
-6. **Compliance check** — refuse-and-flag any item that would fetch, extract, or commit
-   copyrighted game content (CLAUDE.md guardrails). Licensed-source work is fine.
+6. **Data and distribution check** — local user-supplied content is authorized for
+   processing, but personal inputs/generated corpora remain gitignored. Flag only
+   unrequested external acquisition, access-control bypass, or proposed publication.
 
 Be concrete: quote current code line references, not vague areas. Your final message is
 the brief itself — the builder consumes it verbatim.

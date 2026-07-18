@@ -5,13 +5,13 @@ import React from 'react';
 
 function inline(text, key) {
   const parts = [];
-  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+  const re = /\*\*([^*]+)\*\*|\*([^*]+)\*|_([^_]+)_/g;
   let last = 0, m, i = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) parts.push(text.slice(last, m.index));
     parts.push(m[1] != null
       ? <strong key={`${key}-${i++}`}>{m[1]}</strong>
-      : <em key={`${key}-${i++}`}>{m[2]}</em>);
+      : <em key={`${key}-${i++}`}>{m[2] ?? m[3]}</em>);
     last = re.lastIndex;
   }
   if (last < text.length) parts.push(text.slice(last));

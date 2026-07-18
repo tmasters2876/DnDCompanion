@@ -16,14 +16,28 @@ const ABILITY_NAMES = { str: 'Strength', dex: 'Dexterity', con: 'Constitution', 
 export default function Sheet({ id, onBack }) {
   const [character, setCharacter] = useState(null);
   const [lookup, setLookup] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const [tab, setTab] = useState('actions');
   const [levelingUp, setLevelingUp] = useState(false);
   const saveTimer = useRef(null);
 
   useEffect(() => {
+    setCharacter(null);
+    setLookup(null);
+    setLoadError(null);
+    if (!id) {
+      setLoadError('Character not found.');
+      return;
+    }
     fetch(`/api/characters/${id}`)
-      .then((r) => r.json())
-      .then(async (c) => { setLookup(await lookupFor(c)); setCharacter(c); });
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Character request failed (${response.status})`);
+        const next = await response.json();
+        if (!Array.isArray(next.classes)) throw new Error('Character record has no class data');
+        setLookup(await lookupFor(next));
+        setCharacter(next);
+      })
+      .catch((error) => setLoadError(error.message));
   }, [id]);
 
   // Persist ~1s after the latest change; choices only, derived values never stored.
@@ -46,6 +60,7 @@ export default function Sheet({ id, onBack }) {
     () => (character && lookup ? derive(character, lookup) : null),
     [character, lookup],
   );
+  if (loadError) return <p className="error">{loadError}</p>;
   if (!view) return <p className="muted">loading sheet…</p>;
 
   return (
@@ -117,8 +132,16 @@ const CONDITIONS = ['blinded', 'charmed', 'deafened', 'frightened', 'grappled', 
 
 function SheetHeader({ character, view, update, onBack, onLevelUp }) {
   const { rollDice } = useRoller();
+  const [hpAmount, setHpAmount] = useState(1);
   const hp = character.hp ?? { current: view.maxHp, temp: 0 };
   const setHp = (current) => update({ hp: { ...hp, current: Math.max(0, Math.min(view.maxHp + 20, current)) } });
+  const hpQty = Math.max(0, Number(hpAmount) || 0);
+  const takeDamage = () => {
+    const absorbed = Math.min(hp.temp ?? 0, hpQty);
+    update({ hp: { temp: (hp.temp ?? 0) - absorbed, current: Math.max(0, hp.current - (hpQty - absorbed)) } });
+  };
+  const heal = () => update({ hp: { ...hp, current: Math.min(view.maxHp, hp.current + hpQty) } });
+  const addTemp = () => update({ hp: { ...hp, temp: Math.max(hp.temp ?? 0, hpQty) } });
 
   const shortRest = () => update({ pactUsed: 0 }); // pact slots return on short rest
   const longRest = () => update({
@@ -169,6 +192,12 @@ function SheetHeader({ character, view, update, onBack, onLevelUp }) {
             <button className="hpbtn" onClick={() => setHp(hp.current + 1)}>+</button>
           </span>
           <span>Hit Points{hp.temp ? ` (+${hp.temp} temp)` : ''}</span>
+          <span className="sheet-hp-adjust">
+            <input aria-label="Character HP adjustment" type="number" min="0" value={hpAmount} onChange={(event) => setHpAmount(event.target.value)} />
+            <button onClick={takeDamage}>damage</button>
+            <button onClick={heal}>heal</button>
+            <button onClick={addTemp}>temp</button>
+          </span>
         </div>
         <div className="statpill rests">
           <button className="linkish" onClick={shortRest}>short rest</button>
