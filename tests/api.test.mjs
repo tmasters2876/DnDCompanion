@@ -12,7 +12,11 @@ let proc;
 
 before(async () => {
   proc = spawn('node', [join(ROOT, 'server', 'index.mjs')], {
-    env: { ...process.env, PORT: String(PORT) },
+    env: {
+      ...process.env, PORT: String(PORT), APP_RELEASE: 'test-release',
+      DATA_DIGEST: 'sha256:test-data', BUILD_DATE: '2026-07-18T00:00:00.000Z',
+      EXPECTED_COMPENDIUM_MIN: '1',
+    },
     stdio: 'ignore',
   });
   for (let i = 0; i < 40; i++) {
@@ -30,6 +34,25 @@ const get = async (path) => {
   const r = await fetch(`${API}${path}`);
   return { status: r.status, body: await r.json() };
 };
+
+test('health and version identify a ready immutable deployment without leaking paths', async () => {
+  const health = await get('/health');
+  assert.equal(health.status, 200);
+  assert.equal(health.body.status, 'ok');
+  assert.equal(health.body.ready, true);
+  assert.equal(health.body.release, 'test-release');
+  assert.ok(health.body.entries > 100_000);
+  assert.equal(health.body.stateWritable, true);
+
+  const versionResponse = await fetch(`${API}/version`);
+  assert.equal(versionResponse.headers.get('cache-control'), 'no-store');
+  const version = await versionResponse.json();
+  assert.deepEqual(version, {
+    appVersion: '0.1.0', release: 'test-release', dataDigest: 'sha256:test-data',
+    builtAt: '2026-07-18T00:00:00.000Z', campaignSchemaVersion: 1,
+  });
+  assert.doesNotMatch(JSON.stringify({ health: health.body, version }), /\/Users\/|\/volume1\/|OPENAI|TOKEN|PASSWORD/i);
+});
 
 test('types endpoint reports the full corpus', async () => {
   const { body } = await get('/compendium/types');

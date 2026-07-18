@@ -1,7 +1,7 @@
 // D&D Companion server: compendium API + character/homebrew file I/O + static app.
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, unlinkSync, accessSync, constants } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -17,6 +17,38 @@ mkdirSync(HOMEBREW, { recursive: true });
 const app = Fastify({ logger: { level: 'warn' } });
 let compendium = loadCompendium(DATA);
 const slugPattern = /^[a-z0-9][a-z0-9-]*$/;
+const packageVersion = (() => {
+  try { return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version ?? 'unknown'; }
+  catch { return 'unknown'; }
+})();
+const release = process.env.APP_RELEASE ?? 'development';
+const dataDigest = process.env.DATA_DIGEST ?? 'development';
+const builtAt = process.env.BUILD_DATE ?? 'development';
+const expectedCompendiumMin = Math.max(1, Number(process.env.EXPECTED_COMPENDIUM_MIN ?? 1) || 1);
+const writable = (path) => {
+  try { accessSync(path, constants.W_OK); return true; } catch { return false; }
+};
+
+// ---------- deployment health/version ----------
+app.get('/api/health', (req, reply) => {
+  const entries = [...compendium.byType.values()].reduce((total, list) => total + list.length, 0);
+  const stateWritable = writable(CHARACTERS) && writable(HOMEBREW);
+  const ready = entries >= expectedCompendiumMin && stateWritable;
+  return reply.code(ready ? 200 : 503).send({
+    status: ready ? 'ok' : 'unavailable', ready, release, entries, stateWritable,
+  });
+});
+
+app.get('/api/version', (req, reply) => {
+  reply.header('cache-control', 'no-store');
+  return {
+    appVersion: packageVersion,
+    release,
+    dataDigest,
+    builtAt,
+    campaignSchemaVersion: 1,
+  };
+});
 
 // ---------- compendium ----------
 app.get('/api/compendium/types', () => {

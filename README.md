@@ -20,6 +20,22 @@ npm run dev          # server on :5177, app on :5176
 Open http://localhost:5176 — it lands on the DM screen. For a production build:
 `npm start` (serves everything on :5177, reachable over LAN).
 
+## Household server
+
+The canonical household deployment is the internal-only Synology service at
+<http://10.0.1.50:15177>. The Mac remains the development, Git, import, and test
+environment; the NAS receives immutable application and normalized-data releases.
+Characters and homebrew use persistent NAS bind mounts, so container restart or
+replacement does not erase them. Campaign tabs and combat tracking remain in each
+browser's `localStorage`; ordinary browser/device reboots preserve them, and campaign
+export/import provides a portable backup and sharing path.
+
+Deployment files and the operator runbook live in
+[`deploy/synology/`](deploy/synology/README.md). Stage a tested, committed release with
+`npm run deploy:nas:stage -- --with-data`, build/recreate the `dnd-companion` project in
+Container Manager, then run `BASE_URL=http://10.0.1.50:15177 npm run test:deployment`.
+The service binds only to the NAS LAN address and is not configured for public access.
+
 ## Campaign backups and sharing
 
 Name the current campaign on the DM screen, then use **Export campaign** to download a
@@ -68,6 +84,7 @@ identified instead of being silently removed.
 npm test           # unit (dice, rules) + data validation + API integration
 npm run test:e2e   # headless-browser functional suite over every flow
 npm run test:all   # both
+npm run test:container # disposable production image + restart/recreate persistence
 ```
 
 ## License note

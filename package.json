@@ -18,7 +18,10 @@
     "start": "npm run build -w app && node server/index.mjs",
     "test": "node --test app/src/dice/engine.test.mjs app/src/compendium/mechanics.test.mjs app/src/dm/campaignState.test.mjs app/src/rules/derive.test.mjs tests/import.test.mjs tests/markdown-import.test.mjs tests/compendium-usability.test.mjs tests/data-policy.test.mjs tests/data.test.mjs tests/api.test.mjs",
     "test:e2e": "node tests/e2e.mjs",
-    "test:all": "npm test && npm run test:e2e"
+    "test:all": "npm test && npm run test:e2e",
+    "test:deployment": "node scripts/deployment-smoke.mjs",
+    "test:container": "bash scripts/container-acceptance.sh",
+    "deploy:nas:stage": "bash scripts/deploy-synology.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

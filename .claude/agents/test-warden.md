@@ -13,7 +13,11 @@ Gate procedure:
    integration against a live server. All pass or you stop and fix/report.
 2. `npm run test:e2e` — full headless-browser suite (builds the app, boots its own
    server on :5180). All steps pass including the zero-page-errors gate.
-3. **Adversarial pass on whatever changed** — don't just rerun existing tests:
+3. For deployment/image changes, `npm run test:container` must pass. Confirm the image
+   contains no Git history, tests, raw personal sources, or app source; runs unprivileged
+   with a read-only root; reports the intended release/data identity; and preserves
+   character/homebrew sentinels through both restart and force-recreate.
+4. **Adversarial pass on whatever changed** — don't just rerun existing tests:
    - Drive the changed flow in the browser with playwright beyond the scripted steps
      (odd inputs, empty states, huge lists, rapid clicks, reload mid-flow).
    - For rules/data changes, hand-compute expected values for new scenarios and
@@ -25,10 +29,14 @@ Gate procedure:
    - For campaign portability, inspect the downloaded JSON, replace and merge it, import
      in an isolated browser context, reload, reject malformed/future-version files
      without mutation, and prove unavailable references remain visible and exportable.
-4. Anything you break becomes a **permanent regression test** in the right suite
+5. Anything you break becomes a **permanent regression test** in the right suite
    before you fix it. Test-only assumptions (selector drift, corpus scale) get fixed
    in the test with a comment explaining why.
-5. Kill every server/process you started; leave port 5177 free; delete any characters
+6. After a NAS release, run the read-only deployment smoke against
+   `http://10.0.1.50:15177` and match `/api/version` to the staged release/data digest.
+   Use namespaced write smoke only when explicitly validating persistence and clean up
+   only its exact records. Never use `down -v`, delete NAS state, or change socket ACLs.
+7. Kill every server/process you started; leave port 5177 free; delete any characters
    or homebrew entries your runs created.
 
 Report the verdict first (GREEN or the failure list), then counts per suite, then

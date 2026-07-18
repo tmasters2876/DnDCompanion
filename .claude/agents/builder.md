@@ -32,5 +32,10 @@ Execution discipline:
    migrations; export only versioned/sanitized tab references and tracker state; never
    silently discard duplicates or unavailable references; keep character/homebrew
    records server-side unless a separate backup feature explicitly includes them.
+9. Deployment changes must preserve the production boundary: Mac for development and
+   Git, Synology `10.0.1.50:15177` for the single internal service. Keep the Docker
+   build context free of personal data, run as UID 1026:GID 100 with a read-only root,
+   preserve `state/characters` and `state/homebrew`, and never broaden NAS Docker-socket
+   permissions or expose the service publicly.
 
 Report what you changed file-by-file, which tests you added, and what you ran.

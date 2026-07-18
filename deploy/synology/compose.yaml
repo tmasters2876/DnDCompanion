@@ -1,0 +1,52 @@
+services:
+  app:
+    image: dnd-companion:${DND_RELEASE}
+    container_name: dnd-companion
+    build:
+      context: ./releases/${DND_RELEASE}
+      dockerfile: Dockerfile
+      args:
+        APP_RELEASE: ${DND_RELEASE}
+        BUILD_DATE: ${BUILD_DATE}
+        DATA_DIGEST: sha256:${DND_DATA_VERSION}
+    user: "${PUID}:${PGID}"
+    environment:
+      NODE_ENV: production
+      PORT: "5177"
+      TZ: America/Chicago
+      APP_RELEASE: ${DND_RELEASE}
+      BUILD_DATE: ${BUILD_DATE}
+      DATA_DIGEST: sha256:${DND_DATA_VERSION}
+      EXPECTED_COMPENDIUM_MIN: "100000"
+      NODE_OPTIONS: --max-old-space-size=1536
+    ports:
+      - "10.0.1.50:15177:5177"
+    volumes:
+      - ./data-releases/${DND_DATA_VERSION}/srd:/app/data/srd:ro
+      - ./data-releases/${DND_DATA_VERSION}/sources/_normalized:/app/data/sources/_normalized:ro
+      - ./state/characters:/app/data/characters:rw
+      - ./state/homebrew:/app/data/homebrew:rw
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 2g
+    mem_reservation: 1g
+    cpus: 2.0
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5177/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 75s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

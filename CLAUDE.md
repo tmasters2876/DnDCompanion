@@ -47,6 +47,9 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
 | `npm run data:all` | fetch + normalize licensed data, then import local JSON + Markdown |
 | `npm test` | unit (dice, rules) + data validation + API integration |
 | `npm run test:e2e` | headless-Chromium functional suite (builds app, own server :5180) |
+| `npm run test:container` | disposable production image + restart/recreate persistence |
+| `npm run deploy:nas:stage -- --with-data` | stage a committed app/data release on Synology |
+| `BASE_URL=http://10.0.1.50:15177 npm run test:deployment` | read-only live deployment smoke |
 
 ## Architecture map
 
@@ -69,6 +72,9 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
 - `app/src/sheet/`, `app/src/builder/` — sheet, creation wizard, guided level-up.
 - `docs/SCHEMA.md` — internal compendium schema all components consume.
 - `tests/` — data.test.mjs, api.test.mjs, e2e.mjs (+ unit tests beside their modules).
+- `Dockerfile`, `deploy/synology/`, deployment scripts — hardened x86_64 production
+  image, single internal Container Manager project, immutable releases, persistent
+  character/homebrew mounts, and health/version/smoke checks.
 
 ## Rules-correctness anchors (protect these in review)
 
@@ -87,6 +93,13 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
 - Browser campaign backups are schema-versioned reference files. Import validates before
   mutation, regenerates unique instance IDs, preserves duplicate combatants, retains
   unavailable references, and never embeds compendium/character/homebrew content.
+- The canonical household service is `http://10.0.1.50:15177`, bound to the NAS LAN
+  address only. The Mac owns development/Git/imports; the Synology is production in
+  development. Deploy committed immutable releases, never publish private data, never
+  weaken the Docker socket, and never use `down -v` or delete `state/` during upgrades.
+- Production readiness requires `/api/health` to report 100,000+ entries and writable
+  state, `/api/version` to match the staged release/data digest, the disposable
+  container acceptance gate, and the live read-only deployment smoke after recreation.
 - Edition layering: same slug in both editions → 2024 default, 2014 behind badge.
 
 ## State (2026-07-18)
@@ -97,10 +110,18 @@ bad winners replaced by complete same-identity alternatives; 167,225 local JSON
 records plus 1,838 personal-Markdown records normalized with zero entry/parse failures),
 DM screen, compendium, dice, rules engine, sheet, wizard, level-up, homebrew, rests /
 death saves / conditions, print view, Roll20-style theme with original premium lich,
-dragon, and death-knight artwork. Suites: 75 unit/data/API tests + 31 e2e steps, all passing.
+dragon, and death-knight artwork. The production image preserves writable state across
+restart/recreate and exposes health/version release metadata; the Synology release is
+internal-only at `10.0.1.50:15177`. Suites: 77 unit/data/API tests + 31 e2e steps plus
+container acceptance, all passing.
 
 ## Changelog
 
+- 2026-07-18 · Synology production-in-development: hardened Node 22 multi-stage image,
+  LAN-only Compose project at `10.0.1.50:15177`, immutable Git/data release staging,
+  persistent character/homebrew mounts, health and version endpoints, namespaced live
+  smoke test, and disposable restart/recreate persistence acceptance. Browser campaign
+  state remains reboot-safe in localStorage and portable through export/import.
 - 2026-07-18 · Portable campaign continuity: named browser campaigns, automatic legacy
   tab migration, versioned JSON download/upload, replace or merge import, active-tab and
   independent combat-state preservation, cross-browser sharing, strict size/schema/data
