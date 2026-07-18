@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, unlink
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { loadCompendium, resolve, search, summarize, visibleTo } from './lib/compendium.mjs';
+import { loadCompendium, resolve, search, summarize, visibleTo, applyHomebrewChange } from './lib/compendium.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = join(ROOT, 'data');
@@ -178,7 +178,7 @@ app.post('/api/homebrew', (req, reply) => {
     text: req.body.text ?? '',
   };
   writeFileSync(file, JSON.stringify(entry, null, 1));
-  compendium = loadCompendium(DATA);
+  applyHomebrewChange(compendium, { entry, removedId: entry.id });
   return reply.code(201).send(entry);
 });
 
@@ -195,7 +195,7 @@ app.put('/api/homebrew/:type/:slug/tier', (req, reply) => {
   if (entry.owner !== dmKeyOf(req)) return reply.code(403).send({ error: 'only the owner can change this entry' });
   entry.tier = tier;
   writeFileSync(file, JSON.stringify(entry, null, 1));
-  compendium = loadCompendium(DATA);
+  applyHomebrewChange(compendium, { entry, removedId: entry.id });
   return { id: entry.id, tier };
 });
 
@@ -207,7 +207,7 @@ app.delete('/api/homebrew/:type/:slug', (req, reply) => {
   const entry = JSON.parse(readFileSync(file, 'utf8'));
   if (entry.tier && entry.owner !== dmKeyOf(req)) return reply.code(403).send({ error: 'only the owner can remove this entry' });
   unlinkSync(file);
-  compendium = loadCompendium(DATA);
+  applyHomebrewChange(compendium, { removedId: `${type}/${slug}/homebrew` });
   return { deleted: `${type}/${slug}/homebrew` };
 });
 

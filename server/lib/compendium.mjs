@@ -319,3 +319,33 @@ export function summarize(entry) {
     ...(SUMMARY_FIELDS[entry.type]?.(entry.data) ?? {}),
   };
 }
+
+// Incremental homebrew mutation — a write must not pay the full-corpus reload
+// (~37s on the NAS). Homebrew has the worst sourceRank, so it never displaces
+// another source: it joins byType only when no better source owns its identity.
+export function applyHomebrewChange(compendium, { entry, removedId }) {
+  const list = (type) => {
+    if (!compendium.byType.has(type)) compendium.byType.set(type, []);
+    return compendium.byType.get(type);
+  };
+  if (removedId) {
+    const [type] = removedId.split('/');
+    compendium.byId.delete(removedId);
+    compendium.byType.set(type, list(type).filter((e) => e.id !== removedId));
+  }
+  if (entry) {
+    compendium.byId.set(entry.id, entry);
+    const entries = list(entry.type);
+    const existingIndex = entries.findIndex((e) => e.id === entry.id);
+    if (existingIndex >= 0) {
+      entries[existingIndex] = entry;
+    } else {
+      const shadowed = entries.some((e) =>
+        e.slug === entry.slug && e.edition === entry.edition && sourceRank(e.source.key) < sourceRank('homebrew'));
+      if (!shadowed) {
+        entries.push(entry);
+        entries.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+      }
+    }
+  }
+}

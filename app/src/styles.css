@@ -648,3 +648,11 @@ button.rollable.atk { font-variant: small-caps; letter-spacing: 0.04em; }
 .stash-tools { display: flex; gap: 1rem; align-items: center; }
 .stash-import input { display: none; }
 .clear-filters { align-self: center; }
+.pairing-reveal { display: flex; gap: 0.5rem; align-items: center; margin: 0.2rem 0 0.5rem; }
+.pairing-reveal input { width: 26rem; font-family: ui-monospace, monospace; font-size: 0.8rem; }
+.helppage { max-width: 52rem; }
+.helppage h2 { color: var(--gold); }
+.helppage section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1.2rem; margin-bottom: 0.8rem; box-shadow: 0 6px 22px rgba(0,0,0,0.5); }
+.helppage h3 { color: var(--gold); margin-top: 0; }
+.helppage li { margin: 0.3rem 0; }
+.helppage code { background: var(--panel2); border: 1px solid var(--border); border-radius: 3px; padding: 0 0.3rem; font-size: 0.85em; }

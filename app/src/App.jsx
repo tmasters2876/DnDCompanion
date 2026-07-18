@@ -6,6 +6,7 @@ import Sheet from './sheet/Sheet.jsx';
 import Wizard from './builder/Wizard.jsx';
 import Homebrew from './homebrew/Homebrew.jsx';
 import DMScreen from './dm/DMScreen.jsx';
+import Help from './Help.jsx';
 import Sigil, { LichWatermark } from './Sigil.jsx';
 import { RollProvider } from './dice/RollContext.jsx';
 import RollLog from './dice/RollLog.jsx';
@@ -73,6 +74,10 @@ export default function App() {
               className={route.type === 'homebrew' ? 'active' : ''}
               onClick={() => go('homebrew')}
             >⚗ homebrew</button>
+            <button
+              className={route.type === 'help' ? 'active' : ''}
+              onClick={() => go('help')}
+            >? help</button>
           </nav>
           {TYPE_ORDER.includes(route.type) && (
             <nav className="types">
@@ -84,7 +89,9 @@ export default function App() {
             </nav>
           )}
           <main>
-            {route.type === 'dm' ? (
+            {route.type === 'help' ? (
+              <Help />
+            ) : route.type === 'dm' ? (
               <DMScreen pending={dmPending} onPendingHandled={clearDmPending} />
             ) : route.type === 'homebrew' ? (
               <Homebrew />

@@ -18,18 +18,33 @@ function ProfilePanel({ profile, onProfile }) {
   const [name, setName] = useState('');
   const [pairKey, setPairKey] = useState('');
   const [error, setError] = useState(null);
+  const [showCode, setShowCode] = useState(false);
+  const [copied, setCopied] = useState(false);
   if (profile) {
     return (
-      <p className="muted profile-line">
-        DM profile: <strong>{profile.name}</strong>
-        {' · '}<button className="linkish" onClick={() => navigator.clipboard?.writeText(profile.key).catch(() => {})}>copy pairing code</button>
-        <span className="muted"> (paste it on another device to carry your private table)</span>
-      </p>
+      <div className="profile-line">
+        <p className="muted">
+          DM profile: <strong>{profile.name}</strong>
+          {' · '}<button className="linkish" onClick={() => setShowCode((v) => !v)}>{showCode ? 'hide' : 'show'} pairing code</button>
+          <span className="muted"> (enter it on another device to carry your private table)</span>
+        </p>
+        {showCode && (
+          <p className="pairing-reveal">
+            <input readOnly value={profile.key} aria-label="Pairing code" onFocus={(e) => e.target.select()} />
+            {/* clipboard API needs https/localhost — on the NAS you select + copy manually */}
+            {navigator.clipboard && (
+              <button className="linkish" onClick={() => navigator.clipboard.writeText(profile.key).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }, () => {})}>
+                {copied ? 'copied ✓' : 'copy'}
+              </button>
+            )}
+          </p>
+        )}
+      </div>
     );
   }
   return (
     <div className="wizhint profile-setup">
-      <p><strong>Create your DM profile</strong> to save private homebrew. Private entries are hidden from every other browser; the profile lives on this device.</p>
+      <p><strong>Create your DM profile</strong> to save private homebrew. Private entries are hidden from every other browser; the profile lives on this device. <a className="rowlink" href="#/help">How privacy &amp; pairing work →</a></p>
       <p className="hb-row">
         <input placeholder="DM name" value={name} onChange={(e) => setName(e.target.value)} />
         <button className="bigbutton" disabled={!name.trim()} onClick={() => onProfile(createProfile(name))}>Create profile</button>
@@ -60,7 +75,7 @@ export default function Homebrew() {
     fetch('/api/homebrew', { headers: dmHeaders() }).then((r) => r.json()).then(setList);
     setStash(loadStash());
   };
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }, [profile]); // profile change (create/pair) re-lists with the new key
   useEffect(() => { setFields(BLANK[type]); }, [type]);
 
   const set = (k) => (e) => setFields({ ...fields, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
@@ -103,6 +118,7 @@ export default function Homebrew() {
       refresh();
       return;
     }
+    setStatus('Saving…');
     const res = await fetch('/api/homebrew', {
       method: 'POST', headers: { 'content-type': 'application/json', ...dmHeaders() },
       body: JSON.stringify({ ...envelope, tier }),
@@ -125,6 +141,7 @@ export default function Homebrew() {
   };
 
   const moveTier = async (e, nextTier) => {
+    setStatus('Updating…');
     const res = await fetch(`/api/homebrew/${e.type}/${e.slug}/tier`, {
       method: 'PUT', headers: { 'content-type': 'application/json', ...dmHeaders() },
       body: JSON.stringify({ tier: nextTier }),

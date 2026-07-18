@@ -122,6 +122,14 @@ read-only smoke: release `caf2bab`, data `sha256:6b61779b…`, 108,994 entries).
 
 ## Changelog
 
+- 2026-07-18 · Usability round from testers: homebrew writes are incremental (in-memory
+  apply instead of full-corpus reload — NAS saves drop from ~37s to instant; guarded by
+  a latency regression test), pairing works on plain-http (reveal-code field replaces
+  the secure-context-only clipboard button; paired devices refetch the private table
+  immediately — caught by a new cross-device e2e), Saving…/Updating… feedback on every
+  homebrew action, and an in-app Help page (DM screen, dice, search, privacy tiers,
+  step-by-step pairing, campaigns) linked from the profile setup box.
+
 - 2026-07-18 · Homebrew privacy tiers: device DM profile (name + unguessable key,
   pairing code for a second device), three tiers — local-only browser stash with
   export/import, server-private (owner-key scoped, default), shared — with free

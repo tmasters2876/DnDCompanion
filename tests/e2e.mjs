@@ -539,6 +539,29 @@ await step('homebrew: share makes it public, unshare hides it again', async () =
   await page.locator('tr', { hasText: 'E2E Secret Bolt' }).locator('button:has-text("delete")').click();
   await page.waitForFunction(() => !document.querySelector('.homebrew table')?.textContent.includes('E2E Secret Bolt'));
 });
+await step('homebrew: pairing code carries the private table to a second device', async () => {
+  // create a private entry to carry over
+  await page.click('nav.types button:has-text("homebrew")');
+  await page.waitForSelector('.homebrew form');
+  await page.fill('.homebrew form input[required]', 'E2E Paired Secret');
+  await page.click('.homebrew form .bigbutton');
+  await page.waitForFunction(() => document.body.textContent.includes('private to your DM profile'));
+  await page.locator('.profile-line button', { hasText: 'show pairing code' }).click();
+  const code = await page.inputValue('.pairing-reveal input');
+  if (!/^[a-zA-Z0-9-]{8,80}$/.test(code)) throw new Error(`revealed code looks wrong: ${code}`);
+  const deviceB = await (await browser.newContext()).newPage();
+  await deviceB.goto(`${BASE}/#/homebrew`);
+  await deviceB.waitForSelector('.profile-setup');
+  await deviceB.fill('.profile-setup input[placeholder="DM name"]', 'E2E DM tablet');
+  await deviceB.fill('.profile-setup input[placeholder*="pairing code"]', code);
+  await deviceB.locator('.profile-setup button', { hasText: 'pair this device' }).click();
+  await deviceB.waitForSelector('.profile-line');
+  await deviceB.waitForFunction(() => document.body.textContent.includes('E2E Paired Secret'));
+  await deviceB.context().close();
+  page.once('dialog', (d) => d.accept());
+  await page.locator('tr', { hasText: 'E2E Paired Secret' }).locator('button:has-text("delete")').click();
+  await page.waitForFunction(() => !document.querySelector('.homebrew table')?.textContent.includes('E2E Paired Secret'));
+});
 await step('homebrew: local-only entry stays off the server, merges into owner search', async () => {
   await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
   await page.waitForSelector('.homebrew form');
@@ -559,6 +582,15 @@ await step('homebrew: local-only entry stays off the server, merges into owner s
   page.once('dialog', (d) => d.accept());
   await page.locator('tr', { hasText: 'E2E Device Bolt' }).locator('button:has-text("delete")').click();
   await page.waitForFunction(() => !document.body.textContent.includes('E2E Device Bolt'));
+});
+await step('help page renders and covers privacy + pairing', async () => {
+  await page.click('nav.types button:has-text("help")');
+  await page.waitForSelector('.helppage');
+  for (const needed of ['privacy', 'pairing', 'Rolling dice', 'DM screen']) {
+    if (!(await page.locator('.helppage').textContent()).includes(needed)) {
+      throw new Error(`help page missing section: ${needed}`);
+    }
+  }
 });
 await step('search state survives back-to-list; clear filters resets', async () => {
   await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism

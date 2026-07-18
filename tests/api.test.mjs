@@ -237,6 +237,21 @@ test('tier moves are owner-only and unshare truly hides', async () => {
   assert.equal(ownerDelete.status, 200);
 });
 
+test('homebrew writes are incremental, not full reloads', async () => {
+  const t0 = Date.now();
+  const res = await hb('/homebrew', {
+    method: 'POST',
+    body: JSON.stringify({ type: 'rule', slug: 'tier-test-speed', name: 'Tier Speed', tier: 'private', data: {}, text: 'speed probe' }),
+  }, KEY_A);
+  const elapsed = Date.now() - t0;
+  assert.equal(res.status, 201);
+  assert.ok(elapsed < 3000, `homebrew POST took ${elapsed}ms — full-reload regression?`);
+  const visible = await hb('/compendium/rule/tier-test-speed', {}, KEY_A);
+  assert.equal(visible.status, 200, 'incrementally-added entry must be immediately searchable');
+  await hb('/homebrew/rule/tier-test-speed', { method: 'DELETE' }, KEY_A);
+  assert.equal((await hb('/compendium/rule/tier-test-speed', {}, KEY_A)).status, 404, 'incrementally-removed entry must vanish');
+});
+
 test('keyless saves are rejected; legacy entries stay frozen and visible', async () => {
   const keyless = await hb('/homebrew', {
     method: 'POST',
