@@ -28,9 +28,13 @@ Open http://localhost:5176 — it lands on the DM screen. For a production build
 - `npm run data:build` — normalizes everything into the internal schema
   ([docs/SCHEMA.md](docs/SCHEMA.md)) in `data/srd/`.
 - `npm run data:import` — additionally ingests any 5etools-format JSON you place in
-  `data/sources/` (recursively; your files, your machine — the folder is gitignored).
+  `data/sources/` and local `dnd-data` JSON exports in `data/` (your files, your
+  machine—both are gitignored). It resolves inheritance/lore across files and emits a
+  machine-readable coverage report at `data/sources/_normalized/import-report.json`.
 - Duplicates resolve automatically: when the same entry exists in several sources, the
-  one closest to official material wins (SRD → official book codes → open packs → other).
+  one closest to official material wins (SRD → official book codes → open packs → other),
+  with explicit aliases/reprints and structural fingerprints used conservatively.
+- `GET /api/compendium/audit` exposes the latest import gaps and boot-time dedupe totals.
 
 ## Architecture
 

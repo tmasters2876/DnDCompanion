@@ -20,9 +20,9 @@ export default function Detail({ type, slug, edition, onBack, onSwitchEdition })
   if (!entry) return <p className="muted">loading…</p>;
 
   const body =
-    type === 'monster' ? <StatBlock entry={entry} /> :
+    type === 'monster' && !entry.data?.partial ? <StatBlock entry={entry} /> :
     type === 'spell' ? <SpellCard entry={entry} /> :
-    type === 'class' ? <ClassPage entry={entry} /> :
+    type === 'class' && !entry.data?.partial ? <ClassPage entry={entry} /> :
     (
       <div className="detail">
         <h2>{entry.name}</h2>

@@ -25,6 +25,12 @@ app.get('/api/compendium/types', () => {
   return types;
 });
 
+app.get('/api/compendium/audit', (req, reply) => {
+  const report = join(DATA, 'sources', '_normalized', 'import-report.json');
+  if (!existsSync(report)) return reply.code(404).send({ error: 'run npm run data:import to generate the coverage report' });
+  return { ...JSON.parse(readFileSync(report, 'utf8')), dedupeAtBoot: compendium.dedupe };
+});
+
 app.get('/api/compendium/reload', () => {
   compendium = loadCompendium(DATA);
   const types = {};

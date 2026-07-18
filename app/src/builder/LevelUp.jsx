@@ -20,7 +20,7 @@ export default function LevelUp({ character, lookup, onApply, onClose }) {
   const [feats, setFeats] = useState([]);
 
   useEffect(() => {
-    fetch('/api/compendium/class?limit=50').then((r) => r.json()).then((d) => setAllClasses(d.results));
+    fetch('/api/compendium/class?limit=2000').then((r) => r.json()).then((d) => setAllClasses(d.results.filter((entry) => !entry.partial)));
     fetch('/api/compendium/feat?limit=100').then((r) => r.json())
       .then((d) => setFeats(d.results.filter((f) => f.category !== 'origin')));
   }, []);

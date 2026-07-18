@@ -33,7 +33,7 @@ const get = async (path) => {
 
 test('types endpoint reports the full corpus', async () => {
   const { body } = await get('/compendium/types');
-  assert.ok(body.spell >= 600 && body.monster >= 600 && body.class === 24);
+  assert.ok(body.spell >= 600 && body.monster >= 600 && body.class >= 24);
 });
 
 test('list endpoint: search, filters, pagination', async () => {
@@ -136,4 +136,13 @@ test('reload endpoint refreshes counts', async () => {
   const { body } = await get('/compendium/reload');
   assert.ok(body.reloaded);
   assert.ok(body.types.spell >= 600);
+});
+
+test('audit endpoint exposes importer gaps and boot dedupe metrics', async () => {
+  const { status, body } = await get('/compendium/audit');
+  assert.equal(status, 200);
+  assert.ok(body.summary.filesScanned > 0);
+  assert.ok(body.summary.copies.found >= body.summary.copies.resolved);
+  assert.equal(typeof body.unsupportedByKey, 'object');
+  assert.ok(body.dedupeAtBoot.rawIds > 0);
 });

@@ -163,19 +163,16 @@ export default function Wizard({ onDone, onCancel }) {
 }
 
 function ClassStep({ cls, setCls }) {
-  const classes = useList('class');
+  const classes = useList('class').filter((entry) => !entry.partial);
   return (
-    <div className="pickgrid">
-      {classes.map((c) => (
-        <button
-          key={c.id}
-          className={`pickcard${cls?.slug === c.slug ? ' active' : ''}`}
-          onClick={async () => setCls(await fetchEntry('class', c.slug))}
-        >
-          <strong>{c.name}</strong>
-          <span className="muted">d{c.hitDie}</span>
-        </button>
-      ))}
+    <div>
+      <PickList
+        items={classes}
+        isActive={(c) => cls?.slug === c.slug}
+        onPick={async (c) => setCls(await fetchEntry('class', c.slug))}
+      >
+        {(c) => `d${c.hitDie}`}
+      </PickList>
       {cls && (
         <p className="wizhint">
           {cls.name}: d{cls.data.hitDie} hit die, saves {cls.data.saves.map((s) => s.toUpperCase()).join('/')}
@@ -188,7 +185,7 @@ function ClassStep({ cls, setCls }) {
 }
 
 function SpeciesStep({ species, setSpecies, subspecies, setSubspecies }) {
-  const list = useList('species');
+  const list = useList('species').filter((entry) => !entry.partial);
   return (
     <div>
       <PickList
@@ -215,7 +212,7 @@ function SpeciesStep({ species, setSpecies, subspecies, setSubspecies }) {
 }
 
 function BackgroundStep({ background, setBackground, bgBonus, setBgBonus }) {
-  const list = useList('background');
+  const list = useList('background').filter((entry) => !entry.partial);
   // Backgrounds without 2024 ability-score metadata (imports, legacy) allow free
   // assignment anywhere, per the 2024 custom-background rule.
   const opts = background?.data?.abilityScores?.length ? background.data.abilityScores : ABILITIES;

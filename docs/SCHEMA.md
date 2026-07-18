@@ -88,3 +88,20 @@ Class/subclass features referenced by slug from `class.levels[].features`.
 ### `condition`, `rule`
 Text-only (`data` may be empty) — rendered in compendium and tooltips.
 `rule.data.category`: "rule" | "rule-section" | "weapon-property" | "weapon-mastery".
+
+### Extended reference types
+
+The local importer also preserves `table`, `adventure`, `book`, `item-group`,
+`legendary-group`, `language`, `disease`, `deity`, `reward`, `recipe`, `psionic`,
+`action`, `hazard`, `vehicle`, `vehicle-upgrade`, `deck`, `card`, and `object` records.
+These share the normal envelope and store source-specific searchable fields in `data`.
+Books and adventures include `data.sections[]` with `name`, `page`, and normalized text;
+tables include `columns`, `rows`, and an optional dice expression.
+
+When source lore can be linked to a mechanical record it is appended to `text` and
+stored in `data.lore`. `data.identity` may record `aliases`, `reprints`, and
+`copiedFrom`; the compendium uses these hints during conservative deduplication.
+
+Flattened third-party exports may not contain enough structured mechanics to safely
+drive a stat block or character. Such records carry `data.partial: true`; they remain
+searchable/readable but are excluded from mechanical character-builder choices.

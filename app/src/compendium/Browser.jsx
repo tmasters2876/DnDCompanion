@@ -56,6 +56,14 @@ export default function Browser({ type, onOpen }) {
     feature: ['class', 'level'],
     subclass: ['class'],
     rule: ['category'],
+    table: ['dice', 'columns'],
+    adventure: ['level', 'published'],
+    book: ['author', 'published'],
+    language: ['category'],
+    disease: ['category'],
+    deity: ['category'],
+    reward: ['category'],
+    recipe: ['category'],
   }[type] ?? [];
 
   return (

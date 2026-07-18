@@ -2,6 +2,7 @@ node_modules/
 dist/
 data/raw/
 data/srd/
+data/*.json
 data/sources/*
 !data/sources/README.md
 data/pdfs/*

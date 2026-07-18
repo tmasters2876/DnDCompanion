@@ -12,7 +12,12 @@ import RollLog from './dice/RollLog.jsx';
 
 // Hash routes: #/spell  ·  #/spell/fireball  ·  #/spell/fireball?edition=2014
 
-const TYPE_ORDER = ['spell', 'monster', 'item', 'class', 'subclass', 'species', 'background', 'feat', 'feature', 'condition', 'rule'];
+const TYPE_ORDER = [
+  'spell', 'monster', 'item', 'class', 'subclass', 'species', 'background', 'feat', 'feature',
+  'condition', 'rule', 'table', 'adventure', 'book', 'item-group', 'legendary-group',
+  'language', 'disease', 'deity', 'reward', 'recipe', 'psionic', 'action', 'hazard',
+  'vehicle', 'vehicle-upgrade', 'deck', 'card', 'object',
+];
 
 const parseHash = () => {
   const [path, query] = (location.hash.replace(/^#\/?/, '') || 'dm').split('?');

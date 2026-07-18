@@ -21,7 +21,8 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
   5e-bits, OGL/CC packs via Open5e). WotC book content has no legal JSON/PDF source —
   do not pull 5etools mirrors or extract from PDFs.
 - User-supplied content lives in `data/sources/` (5etools JSON, ingested by
-  `npm run data:import`), `data/pdfs/`, `reference/` — **all gitignored; keep it that way.**
+  `npm run data:import`), optional local `dnd-data` exports in `data/*.json`,
+  `data/pdfs/`, `reference/` — **all gitignored; keep it that way.**
 - Duplicate entries resolve official-first: srd52 → srd51 → official book codes →
   open packs → community → app homebrew (`server/lib/compendium.mjs` `sourceRank`).
 
@@ -65,13 +66,20 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
 
 ## State (2026-07-18)
 
-All phases delivered and green: data pipeline (80,003 deduped entries loaded at boot),
+All phases delivered and green: two-pass data pipeline (119,006 deduped entries loaded
+at boot; 167,225 local records normalized with zero entry failures and a machine-readable coverage report),
 DM screen, compendium, dice, rules engine, sheet, wizard, level-up, homebrew, rests /
-death saves / conditions, print view, Roll20-style theme with original SVG artwork.
-Suites: 56 unit/data/API tests + 28 e2e steps, all passing.
+death saves / conditions, print view, Roll20-style theme with original premium lich,
+dragon, and death-knight artwork. Suites: 58 unit/data/API tests + 27 e2e steps, all passing.
 
 ## Changelog
 
+- 2026-07-18 · Importer completeness: per-file/source audit API + JSON report, `_copy`
+  inheritance/modifiers, magic variants, lore linking, full 5etools class/subclass
+  progression, spell lists, richer species/backgrounds, extended rules/reference types,
+  book/adventure browsing, conservative identity/fingerprint dedupe, and local dnd-data
+  adapter. Replaced the cheap lich SVG with original professional lich/dragon/death-
+  knight paintings and capped the expanded class picker.
 - 2026-07-18 · Explicit attack buttons on stat blocks, spell cards (auto/adjustable
   mod), sheet spell rows (+save DCs). CLAUDE.md + agent stack added.
 - 2026-07-18 · DM pivot: DM screen w/ pinned tabs default, dedupe (−26.5k dupes),

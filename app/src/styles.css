@@ -401,11 +401,38 @@ textarea.notes {
 }
 
 /* ---------- DM pivot: elevation, depth, character ---------- */
-.lich-watermark {
-  position: fixed; right: 17rem; bottom: -2rem; width: 22rem; height: auto;
-  opacity: 0.14; pointer-events: none; z-index: 0;
-  filter: drop-shadow(0 0 30px rgba(211, 76, 76, 0.25));
+.bestiary-art {
+  position: fixed; top: 3.2rem; right: 19rem; bottom: 0;
+  width: min(37vw, 34rem); pointer-events: none; z-index: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.3) 18%, #000 52%);
 }
+.bestiary-art::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, var(--bg) 0%, transparent 13%, transparent 74%, var(--bg) 100%);
+}
+.bestiary-artwork {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  object-position: center top; opacity: 0;
+  filter: saturate(0.72) contrast(1.12); transform: scale(1.025);
+  animation: bestiary-cycle 24s infinite ease-in-out;
+}
+.dragon-art { animation-delay: 8s; object-position: 54% top; }
+.knight-art { animation-delay: 16s; object-position: 48% top; }
+.bestiary-rule {
+  position: absolute; right: 0; top: 8%; bottom: 8%; width: 1px;
+  background: linear-gradient(transparent, rgba(201,168,106,0.4), transparent);
+}
+@keyframes bestiary-cycle {
+  0%, 29% { opacity: 0.42; transform: scale(1.025); }
+  33%, 96% { opacity: 0; transform: scale(1.065); }
+  100% { opacity: 0.42; transform: scale(1.025); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bestiary-artwork { animation: none; }
+  .lich-art { opacity: 0.38; }
+}
+@media (max-width: 1050px) { .bestiary-art { display: none; } }
 .content, .rolllog { position: relative; z-index: 1; }
 .crest { flex-shrink: 0; align-self: center; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
 header { gap: 0.7rem; align-items: center; background: linear-gradient(180deg, #1c1a16, #131210); border-bottom: 1px solid var(--gold-dim); }
