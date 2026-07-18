@@ -38,7 +38,8 @@ services:
     stop_grace_period: 30s
     mem_limit: 2g
     mem_reservation: 1g
-    cpus: 2.0
+    # no `cpus:` hard cap — DSM's kernel lacks the CFS quota scheduler
+    # (NanoCPUs error on container create); memory limits still enforced
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5177/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 30s

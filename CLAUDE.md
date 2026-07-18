@@ -112,10 +112,18 @@ DM screen, compendium, dice, rules engine, sheet, wizard, level-up, homebrew, re
 death saves / conditions, print view, Roll20-style theme with original premium lich,
 dragon, and death-knight artwork. The production image preserves writable state across
 restart/recreate and exposes health/version release metadata; the Synology release is
-internal-only at `10.0.1.50:15177`. Suites: 77 unit/data/API tests + 31 e2e steps plus
-container acceptance, all passing.
+internal-only at `10.0.1.50:15177` and **live** (deployed 2026-07-18, verified by the
+read-only smoke: release `caf2bab`, data `sha256:6b61779b…`, 108,994 entries). Suites:
+77 unit/data/API tests + 31 e2e steps plus container acceptance, all passing.
 
 ## Changelog
+
+- 2026-07-18 · First live NAS deployment. Fix: removed the `cpus:` hard cap from
+  `deploy/synology/compose.yaml` — DSM's kernel lacks the CFS quota scheduler and
+  rejects NanoCPUs on container create; memory limits remain enforced. Documented the
+  Container Manager PATH gotcha (`/usr/local/bin` absent from non-login SSH shells —
+  invoke `sudo /usr/local/bin/docker-compose` explicitly). Verified live: health,
+  version identity match, and deployment smoke against `10.0.1.50:15177`.
 
 - 2026-07-18 · Synology production-in-development: hardened Node 22 multi-stage image,
   LAN-only Compose project at `10.0.1.50:15177`, immutable Git/data release staging,
