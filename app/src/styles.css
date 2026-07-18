@@ -488,3 +488,28 @@ nav.types.primary button.active {
 .dm-tab-close:hover { color: var(--red-text); }
 .dm-empty { max-width: 34rem; }
 .dm-content { margin-top: 0.2rem; }
+
+/* explicit attack buttons — unmissable, everywhere an attack roll applies */
+button.rollable.atk {
+  border: 1px solid var(--accent); border-radius: 6px;
+  padding: 0.12rem 0.55rem; margin: 0 0.3rem 0.2rem 0; font-size: 0.84rem;
+  background: linear-gradient(180deg, #2a1614, #1d100f);
+  color: var(--red-text); font-weight: 600;
+  box-shadow: 0 2px 8px rgba(168, 50, 50, 0.35);
+}
+button.rollable.atk:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(168, 50, 50, 0.5);
+  color: #ff6b6b;
+}
+.statblock button.rollable.atk {
+  background: #f3e3d3; color: #7a200d; border-color: #a4432f;
+  box-shadow: 0 2px 6px rgba(122, 32, 13, 0.3);
+}
+.statblock button.rollable.atk:hover { color: #a4432f; }
+label.modinput {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  font-size: 0.72rem; color: var(--muted); margin-right: 0.3rem;
+}
+label.modinput input { width: 3.2rem; padding: 0.15rem 0.3rem; text-align: center; }
+button.rollable.atk { font-variant: small-caps; letter-spacing: 0.04em; }

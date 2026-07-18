@@ -128,10 +128,22 @@ await step('monster stat block: attack with advantage lands in log', async () =>
   await page.fill('.toolbar input', 'goblin');
   await page.locator('a.rowlink', { hasText: /^Goblin Warrior$/ }).click();
   await page.waitForSelector('.statblock');
-  await page.click('.statblock button.rollable:has-text("Scimitar")');
+  await page.click('.statblock button.rollable.atk >> nth=0'); // explicit ⚔ attack chip
   await page.waitForSelector('.advquery');
   await page.getByRole('button', { name: 'Advantage', exact: true }).click();
   await page.waitForSelector('.rollcard .badge.adv');
+});
+await step('spell attack button rolls with adjustable modifier', async () => {
+  await page.goto(`${BASE}/#/spell`);
+  await page.waitForSelector('.toolbar input');
+  await page.fill('.toolbar input', 'guiding bolt');
+  await page.locator('a.rowlink', { hasText: /^Guiding Bolt$/ }).first().click();
+  await page.waitForSelector('.spellcard button.rollable.atk');
+  await page.fill('.spellcard .modinput input', '7');
+  await page.click('.spellcard button.rollable.atk');
+  await page.waitForSelector('.advquery');
+  await page.getByRole('button', { name: 'Normal', exact: true }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('.formula')].some((f) => f.textContent === '1d20+7'));
 });
 await step('CR filter works', async () => {
   await page.goto(`${BASE}/#/monster`);

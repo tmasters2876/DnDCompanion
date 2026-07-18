@@ -10,30 +10,35 @@ const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 function ActionEntry({ monster, entry, group }) {
   const { rollDice } = useRoller();
   const a = entry.attack;
+  const rollAttack = () => rollDice({
+    label: `${monster.name}: ${entry.name}`,
+    sublabel: 'to hit',
+    formula: `1d20${fmtMod(a.bonus)}`,
+    query: true,
+  });
   return (
     <div className="sb-entry">
       <span className="sb-entry-name">
         {a?.bonus != null ? (
-          <button
-            className="rollable"
-            title={`Attack: 1d20${fmtMod(a.bonus)}`}
-            onClick={() => rollDice({
-              label: `${monster.name}: ${entry.name}`,
-              sublabel: 'to hit',
-              formula: `1d20${fmtMod(a.bonus)}`,
-              query: true,
-            })}
-          >{entry.name}</button>
+          <button className="rollable" title={`Attack: 1d20${fmtMod(a.bonus)}`} onClick={rollAttack}>
+            {entry.name}
+          </button>
         ) : entry.name}
         {group && <em className="muted"> ({group})</em>}.
       </span>{' '}
       <Markdown text={entry.text} />
-      {a?.damage?.length > 0 && (
+      {(a?.bonus != null || a?.damage?.length > 0) && (
         <span className="dmgbuttons">
-          {a.damage.map((d, i) => (
+          {a?.bonus != null && (
+            <button className="rollable atk" title="Roll to hit (asks advantage/disadvantage)" onClick={rollAttack}>
+              attack {fmtMod(a.bonus)}
+            </button>
+          )}
+          {(a?.damage ?? []).map((d, i) => (
             <button
               key={i}
               className="rollable dmg"
+              title="Roll damage"
               onClick={() => rollDice({
                 label: `${monster.name}: ${entry.name}`,
                 sublabel: `${d.type ?? 'damage'}`,

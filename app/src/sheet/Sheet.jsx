@@ -326,18 +326,31 @@ function Spells({ character, view, update, lookup }) {
         )}
       </div>
       {spells.length === 0 && <p className="muted">No spells yet — add slugs to spells.known (builder wizard lands in Phase 6), or browse the compendium.</p>}
-      {spells.map((s) => (
-        <div key={s.id} className="spellrow">
-          <span className="muted">{s.data.level === 0 ? 'C' : s.data.level}</span>
-          <a className="rowlink" href={`#/spell/${s.slug}`}>{s.name}</a>
-          {character.spells?.prepared?.includes(s.slug) && <span className="badge">prepared</span>}
-          {s.data.damage?.dice && (
-            <button className="rollable dmg" onClick={() => rollDice({
-              label: s.name, sublabel: s.data.damage.type, formula: s.data.damage.dice,
-            })}>{s.data.damage.dice}</button>
-          )}
-        </div>
-      ))}
+      {spells.map((s) => {
+        const atkMod = view.spellcasting[0]?.attackMod ?? 0;
+        return (
+          <div key={s.id} className="spellrow">
+            <span className="muted">{s.data.level === 0 ? 'C' : s.data.level}</span>
+            <a className="rowlink" href={`#/spell/${s.slug}`}>{s.name}</a>
+            {character.spells?.prepared?.includes(s.slug) && <span className="badge">prepared</span>}
+            {s.data.attackType && (
+              <button className="rollable atk" title={`Spell attack 1d20${atkMod >= 0 ? '+' : ''}${atkMod}`}
+                onClick={() => rollDice({
+                  label: `${character.name}: ${s.name}`,
+                  sublabel: `${s.data.attackType} spell attack`,
+                  formula: `1d20${atkMod >= 0 ? '+' : ''}${atkMod}`,
+                  query: true,
+                })}>atk {atkMod >= 0 ? '+' : ''}{atkMod}</button>
+            )}
+            {s.data.save && <span className="badge">{s.data.save.toUpperCase()} DC {view.spellcasting[0]?.saveDc ?? '—'}</span>}
+            {s.data.damage?.dice && (
+              <button className="rollable dmg" onClick={() => rollDice({
+                label: `${character.name}: ${s.name}`, sublabel: s.data.damage.type, formula: s.data.damage.dice,
+              })}>{s.data.damage.dice}</button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
