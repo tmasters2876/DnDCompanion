@@ -1,0 +1,90 @@
+# Internal compendium schema
+
+Everything downstream of the importers (server API, builder, sheet, drawer, stat blocks)
+reads **only** this schema. Raw-source quirks (5e-bits, Open5e, 5etools) stay inside
+`scripts/build-data.mjs` and `scripts/import-sources.mjs`.
+
+## Files
+
+- `data/srd/<type>.json` — shipped, built by `npm run data:build`. One JSON array per type.
+- `data/sources/<type>.json` — built by `npm run data:import` from user-supplied 5etools files.
+- `data/homebrew/<id>.json` — one entry per file, created by the app.
+
+The server merges all three at startup (srd → sources → homebrew, later wins on id conflict).
+
+## Entry envelope
+
+Every entry, regardless of type:
+
+```jsonc
+{
+  "id": "spell/fireball/srd52",     // <type>/<slug>/<sourceKey> — globally unique
+  "type": "spell",
+  "slug": "fireball",               // kebab-case, unique within (type, sourceKey)
+  "name": "Fireball",
+  "edition": "2024",                // "2024" | "2014"
+  "source": {
+    "key": "srd52",                 // srd52 | srd51 | 5etools source code | "homebrew"
+    "name": "SRD 5.2"
+  },
+  "data": { /* type-specific, below */ },
+  "text": "…"                       // full rules text, markdown; used for search + detail pages
+}
+```
+
+**Edition layering:** entries in different editions with the same `(type, slug)` are the
+same identity. The API resolves to the 2024 entry by default; 2014 shows with a `legacy`
+badge and can be requested explicitly (`?edition=2014` or by exact id).
+
+## Types and their `data` fields
+
+Only fields the rules engine or UI actually consumes are normalized; everything else
+lives in `text`.
+
+### `spell`
+`level` (0 = cantrip), `school`, `castingTime`, `range`, `components` {v,s,m,materialText},
+`duration`, `concentration`, `ritual`, `classes` [class slugs], `damage` {dice, type,
+scaling}, `attackType` ("melee"|"ranged"|null), `save` (ability abbr or null).
+
+### `monster`
+`size`, `creatureType`, `alignment`, `ac`, `acNote`, `hp` {average, formula}, `speed`
+{walk, fly, swim, climb, burrow, hover}, `abilities` {str..cha}, `saves` {ability: bonus},
+`skills` {skill: bonus}, `senses`, `languages`, `cr` (number; 0.125 etc.), `xp`,
+`vulnerabilities`/`resistances`/`immunities`/`conditionImmunities` [strings],
+`traits`/`actions`/`bonusActions`/`reactions`/`legendary` — each an array of
+`{name, text, attack?}` where `attack` = `{bonus, reach|range, damage: [{dice, type}]}`
+when parseable (feeds click-to-roll).
+
+### `class`
+`hitDie`, `primaryAbilities`, `saves` [ability abbrs], `proficiencies` {armor, weapons,
+tools, skills: {choose, from}}, `spellcasting` {ability, kind: "full"|"half"|"third"|"pact"|null,
+preparedFormula}, `levels` — array of 20 `{level, profBonus, features: [feature slugs],
+slots?: [9], classSpecific: {…}}`, `startingEquipment`, `multiclass` {requirements, grants}.
+
+### `subclass`
+`class` (slug), `levels` [{level, features}], `spellcasting?` (e.g. third-casters).
+
+### `species` (2014 "race" normalizes to this type)
+`size`, `speed`, `traits` [{name, text}], `darkvision?`, plus 2014-only `abilityBonuses`
+kept for legacy characters.
+
+### `background`
+`abilityScores` (2024: choose from three), `feat` (slug, 2024), `skills`, `tools`,
+`equipment`, plus 2014-only `feature` {name, text}.
+
+### `feat`
+`category` ("origin"|"general"|"fighting-style"|"epic"|null for 2014), `prerequisite`,
+`abilityIncrease?`, `repeatable`.
+
+### `item`
+`itemType` ("weapon"|"armor"|"gear"|"tool"|"magic"), `rarity`, `attunement`, `cost`
+{qty, unit}, `weight`, weapon: `{category, damage, damageType, properties, mastery?,
+range?}`, armor: `{category, ac, dexCap, strengthReq, stealthDisadvantage}`.
+
+### `feature`
+Class/subclass features referenced by slug from `class.levels[].features`.
+`class` (slug|null), `subclass` (slug|null), `level`.
+
+### `condition`, `rule`
+Text-only (`data` may be empty) — rendered in compendium and tooltips.
+`rule.data.category`: "rule" | "rule-section" | "weapon-property" | "weapon-mastery".

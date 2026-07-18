@@ -1,0 +1,10 @@
+node_modules/
+dist/
+data/raw/
+data/srd/
+data/sources/*
+!data/sources/README.md
+data/pdfs/*
+!data/pdfs/README.md
+reference/
+.DS_Store

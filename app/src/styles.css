@@ -1,0 +1,490 @@
+/* Roll20 "D&D 2024" fidelity theme — near-black ground, gold small-caps headers,
+   warm-grey panel borders, red rollable accents. reference/ screenshots are canon. */
+:root {
+  --bg: #0b0b0a;
+  --panel: #161614;
+  --panel2: #1f1e1b;
+  --border: #3d3a33;
+  --text: #e8e4da;
+  --muted: #98928a;
+  --gold: #c9a86a;
+  --gold-dim: #8a7549;
+  --accent: #a83232;
+  --red-text: #d34c4c;
+  --green: #4c9a6e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Helvetica Neue", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+.layout { display: flex; min-height: 100vh; }
+.content { flex: 1; min-width: 0; }
+
+h2, h3 { font-variant: small-caps; letter-spacing: 0.04em; }
+
+header {
+  display: flex; align-items: baseline; gap: 1rem;
+  padding: 0.7rem 1.25rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 1.05rem; margin: 0; color: var(--gold); font-variant: small-caps; letter-spacing: 0.06em; }
+header .counts { color: var(--muted); font-size: 0.78rem; }
+
+nav.types { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.6rem 1.25rem; }
+nav.types button {
+  background: var(--panel); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 0.28rem 0.7rem; cursor: pointer; font-size: 0.82rem;
+  font-variant: small-caps; letter-spacing: 0.03em;
+}
+nav.types button:hover { color: var(--text); }
+nav.types button.active { border-color: var(--gold); color: var(--gold); }
+
+.toolbar { padding: 0 1.25rem 0.6rem; display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.toolbar input, .toolbar select, select, input[type="number"], input[type="text"], input:not([type]) {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 0.38rem 0.65rem; font-size: 0.88rem;
+}
+.toolbar input { width: 18rem; }
+.levelpips { display: flex; gap: 2px; }
+.levelpips button {
+  background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+  width: 1.9rem; height: 1.9rem; cursor: pointer; border-radius: 3px; font-size: 0.8rem;
+}
+.levelpips button.active { border-color: var(--gold); color: var(--gold); }
+
+main { padding: 0 1.25rem 2rem; }
+table.listing { border-collapse: collapse; width: 100%; }
+table.listing td, table.listing th {
+  text-align: left; padding: 0.32rem 0.75rem;
+  border-bottom: 1px solid var(--border); font-size: 0.9rem;
+}
+table.listing th { color: var(--gold-dim); font-weight: 600; font-variant: small-caps; }
+
+.badge {
+  font-size: 0.68rem; border: 1px solid var(--border); border-radius: 3px;
+  padding: 0.06rem 0.4rem; color: var(--muted); margin-left: 0.4rem;
+  background: var(--panel2);
+}
+.badge.legacy { color: var(--gold); border-color: var(--gold-dim); }
+.badge.adv { color: var(--green); border-color: var(--green); }
+.badge.dis { color: var(--red-text); border-color: var(--accent); }
+.muted { color: var(--muted); }
+a.rowlink { color: var(--text); text-decoration: none; cursor: pointer; }
+a.rowlink:hover { color: var(--gold); }
+
+/* rollable = anything that produces a roll; red accent like Roll20 */
+button.rollable {
+  background: none; border: none; padding: 0; font: inherit; cursor: pointer;
+  color: var(--text); border-bottom: 1px dotted var(--accent);
+}
+button.rollable:hover { color: var(--red-text); }
+button.rollable.dmg {
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 0.1rem 0.45rem; margin: 0 0.25rem 0.2rem 0; font-size: 0.84rem;
+  background: var(--panel2); color: var(--red-text);
+}
+button.rollable.dmg:hover { border-color: var(--accent); }
+button.rollable.dmg.subtle { opacity: 0.75; font-size: 0.78rem; }
+
+/* panels */
+.detail, .spellcard, .classpage, .panel, .wizhint {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+}
+.detail, .spellcard, .classpage { max-width: 46rem; margin-top: 0.5rem; font-size: 0.92rem; line-height: 1.5; }
+.detail h2, .spellcard h2, .classpage h2 { margin-top: 0; color: var(--gold); }
+
+.spellmeta {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 1.5rem;
+  margin: 0.6rem 0; font-size: 0.9rem;
+}
+.spellmeta strong { display: block; color: var(--gold-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.spellrolls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+
+table.progression { border-collapse: collapse; margin-top: 0.6rem; font-size: 0.85rem; }
+table.progression th, table.progression td { border: 1px solid var(--border); padding: 0.25rem 0.5rem; text-align: left; }
+table.progression th { color: var(--gold-dim); }
+td.slotcell { text-align: center; min-width: 1.6rem; }
+.featurebox {
+  margin-top: 0.8rem; border: 1px solid var(--gold-dim); border-radius: 8px;
+  background: var(--panel2); padding: 0.75rem 1rem;
+}
+.featurebox h3 { margin-top: 0; color: var(--gold); }
+
+/* stat block — classic parchment stays; it reads as "book content" */
+.statblock {
+  max-width: 42rem; background: #f6f1e5; color: #3b2f1e;
+  border: 1px solid #b8a878; border-radius: 4px;
+  padding: 1rem 1.25rem; margin-top: 0.5rem; font-size: 0.92rem; line-height: 1.42;
+}
+.statblock h2 { margin: 0; color: #7a200d; font-variant: small-caps; }
+.statblock .sb-meta { margin: 0.1rem 0 0.4rem; }
+.statblock .sb-rule { border-top: 2px solid #7a200d; margin: 0.45rem 0; }
+.statblock .sb-section {
+  color: #7a200d; font-variant: small-caps; font-weight: 600;
+  border-bottom: 1px solid #7a200d; margin: 0.8rem 0 0.4rem; font-size: 1.02rem;
+}
+.statblock p { margin: 0.25rem 0; }
+.statblock button.rollable { color: inherit; border-bottom-color: #7a200d; }
+.statblock button.rollable:hover { color: #7a200d; }
+.statblock button.rollable.dmg { background: #ece4d0; border-color: #b8a878; color: #7a200d; }
+table.sb-abilities { width: 100%; text-align: center; border-collapse: collapse; }
+table.sb-abilities th { color: #7a200d; font-size: 0.8rem; }
+table.sb-abilities td { padding: 0.1rem 0.2rem; }
+.sb-saverow td { font-size: 0.78rem; opacity: 0.85; }
+.sb-entry { margin: 0.35rem 0; }
+.sb-entry-name { font-weight: 600; font-style: italic; }
+.sb-entry p { display: inline; }
+.dmgbuttons { display: inline-block; margin-left: 0.35rem; }
+
+table.mdtable { border-collapse: collapse; margin: 0.5rem 0; font-size: 0.88rem; }
+table.mdtable th, table.mdtable td { border: 1px solid var(--border); padding: 0.25rem 0.55rem; }
+.statblock table.mdtable th, .statblock table.mdtable td { border-color: #b8a878; }
+
+/* roll log + dice tray */
+.rolllog {
+  width: 19rem; background: var(--panel); border-left: 1px solid var(--border);
+  padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;
+  height: 100vh; position: sticky; top: 0;
+}
+.rolllog-head { display: flex; justify-content: space-between; align-items: baseline; }
+.rolllog-head h2 { margin: 0; font-size: 0.92rem; color: var(--gold); }
+.rolllog form input {
+  width: 100%; background: var(--panel2); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); padding: 0.4rem 0.6rem; font-family: ui-monospace, monospace; font-size: 0.85rem;
+}
+.dicetray { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.dicetray button {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 5px; padding: 0.28rem 0; cursor: pointer; font-size: 0.75rem;
+  flex: 1 1 26%; font-weight: 600;
+}
+.dicetray button:hover { border-color: var(--gold); color: var(--gold); }
+.rolllog-entries { overflow-y: auto; display: flex; flex-direction: column; gap: 0.45rem; }
+button.linkish {
+  background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.78rem;
+  text-decoration: underline dotted;
+}
+button.linkish:hover { color: var(--gold); }
+
+.rollcard {
+  background: var(--panel2); border: 1px solid var(--border); border-left: 3px solid var(--border);
+  border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.85rem;
+}
+.rollcard.crit { border-left-color: var(--green); }
+.rollcard.fumble { border-left-color: var(--accent); }
+.rollhead { display: flex; justify-content: space-between; align-items: baseline; }
+.rolllabel { font-weight: 600; }
+.rollsub { color: var(--muted); font-size: 0.78rem; }
+.rollbody { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.25rem; }
+.rollterms .formula { color: var(--muted); font-family: ui-monospace, monospace; font-size: 0.75rem; display: block; }
+.rolltotal { font-size: 1.5rem; font-weight: 700; min-width: 2.2rem; text-align: right; color: var(--gold); }
+.crit .rolltotal { color: var(--green); }
+.fumble .rolltotal { color: var(--red-text); }
+.diceterm { margin-right: 0.4rem; }
+.dicelabel { color: var(--muted); font-size: 0.75rem; margin-right: 0.2rem; }
+.die {
+  display: inline-block; min-width: 1.25rem; text-align: center;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 3px;
+  margin: 0 0.1rem; padding: 0 0.15rem; font-family: ui-monospace, monospace; font-size: 0.8rem;
+}
+.die.dropped { opacity: 0.35; text-decoration: line-through; }
+.die.nat20 { border-color: var(--green); color: var(--green); }
+.die.nat1 { border-color: var(--accent); color: var(--red-text); }
+.mod { color: var(--muted); font-family: ui-monospace, monospace; }
+
+/* advantage query — mirrors Roll20's Advantage/Normal/Disadvantage toggle */
+.advquery-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.advquery {
+  background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 10px;
+  padding: 1.1rem 1.4rem; min-width: 20rem;
+}
+.advquery h3 { margin: 0 0 0.8rem; font-size: 1rem; color: var(--gold); }
+.advquery-buttons { display: flex; gap: 0.5rem; justify-content: center; }
+.advquery-buttons button {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.45rem 0.9rem; cursor: pointer; font-variant: small-caps;
+}
+.advquery-buttons button.primary { border-color: var(--accent); color: var(--red-text); }
+.advquery-buttons button:hover { border-color: var(--gold); }
+.advquery-buttons button:disabled { opacity: 0.4; cursor: default; }
+
+/* ---------- character sheet ---------- */
+.sheet { max-width: 76rem; }
+.sheethead {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 1rem; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.8rem 1.1rem; margin-top: 0.5rem;
+}
+input.charname {
+  display: block; background: none; border: none; border-bottom: 1px dashed transparent;
+  color: var(--gold); font-size: 1.35rem; font-weight: 700; padding: 0.1rem 0; width: 20rem;
+  font-variant: small-caps; letter-spacing: 0.03em;
+}
+input.charname:hover, input.charname:focus { border-bottom-color: var(--gold-dim); outline: none; }
+.subtitle { font-size: 0.85rem; margin-top: 0.2rem; }
+.statpills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.statpill {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.35rem 0.7rem; text-align: center; display: flex; flex-direction: column;
+  font-size: 0.64rem; color: var(--gold-dim); text-transform: uppercase; letter-spacing: 0.06em;
+  min-width: 4.2rem; justify-content: center;
+}
+.statpill .statval { font-size: 1.2rem; font-weight: 700; color: var(--text); letter-spacing: 0; }
+.statpill.rollable { cursor: pointer; }
+.statpill.rollable:hover { border-color: var(--accent); }
+.statpill.rollable .statval { color: var(--red-text); }
+.statpill.hp .statval { display: flex; align-items: center; gap: 0.3rem; justify-content: center; }
+.hpbtn {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  border-radius: 3px; width: 1.35rem; height: 1.35rem; cursor: pointer; line-height: 1;
+}
+.hpbtn:hover { border-color: var(--accent); color: var(--red-text); }
+.statpill.rests { gap: 0.25rem; }
+
+.sheet-columns { display: flex; gap: 0.75rem; margin-top: 0.75rem; align-items: flex-start; }
+.sheet-rail { width: 17.5rem; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.sheet-main {
+  flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.8rem 1rem;
+}
+.panel h3 { margin: 0 0 0.45rem; font-size: 0.82rem; color: var(--gold); letter-spacing: 0.05em; }
+
+.abilities { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+.abilitybox {
+  text-align: center; border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.2rem;
+  background: var(--panel2);
+}
+.abilityname { font-size: 0.66rem; color: var(--gold-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+button.abilitymod { font-size: 1.25rem; font-weight: 700; border-bottom-style: dotted; }
+.abilityscore { font-size: 0.72rem; color: var(--muted); }
+button.savelink { font-size: 0.68rem; color: var(--muted); border-bottom: none; }
+button.savelink:hover { color: var(--red-text); }
+
+.skillrow {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.86rem;
+  padding: 0.16rem 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
+}
+.skillrow > .muted {
+  font-size: 0.66rem; border: 1px solid var(--border); border-radius: 3px;
+  padding: 0.02rem 0.3rem; background: var(--panel2); text-transform: uppercase;
+}
+.skillrow .skillmod {
+  font-weight: 600; min-width: 2.1rem; text-align: center;
+  border: 1px solid var(--border); border-radius: 4px; background: var(--panel2); padding: 0.05rem 0.3rem;
+}
+.skillrow.passive { color: var(--muted); border-bottom: none; margin-top: 0.3rem; }
+
+.sheettabs { display: flex; gap: 0.6rem; margin-bottom: 0.7rem; border-bottom: 1px solid var(--border); }
+.sheettabs button {
+  background: none; color: var(--muted); border: none; border-bottom: 2px solid transparent;
+  padding: 0.3rem 0.4rem; cursor: pointer; font-variant: small-caps; letter-spacing: 0.05em; font-size: 0.9rem;
+}
+.sheettabs button.active { color: var(--gold); border-bottom-color: var(--gold); }
+.sheettabs button:hover { color: var(--text); }
+
+table.attacks { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+table.attacks th, table.attacks td { text-align: left; padding: 0.32rem 0.6rem; border-bottom: 1px solid var(--border); }
+table.attacks th { color: var(--gold-dim); font-weight: 600; font-variant: small-caps; }
+
+.slotrows { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.5rem 0 0.8rem; }
+.slotrow { display: flex; align-items: center; gap: 0.3rem; }
+.slotrow > .muted { width: 4.2rem; font-size: 0.8rem; }
+.pip {
+  width: 1rem; height: 1rem; border-radius: 50%; cursor: pointer;
+  background: var(--gold); border: 1px solid var(--border);
+}
+.pip.used { background: var(--panel2); }
+.pip.pact { border-radius: 3px; }
+.pip:hover { border-color: var(--text); }
+.spellrow { display: flex; align-items: center; gap: 0.6rem; padding: 0.15rem 0; font-size: 0.9rem; }
+.spellrow > .muted { width: 1rem; text-align: center; }
+
+textarea.notes {
+  width: 100%; min-height: 14rem; background: var(--panel2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; font: inherit; font-size: 0.9rem;
+}
+.bigbutton {
+  background: var(--accent); color: #fff; border: 1px solid #7a2020; border-radius: 6px;
+  padding: 0.45rem 1rem; cursor: pointer; font-size: 0.88rem; font-variant: small-caps; letter-spacing: 0.05em;
+}
+.bigbutton:hover { filter: brightness(1.15); }
+.bigbutton:disabled { opacity: 0.4; cursor: default; }
+.charlist { max-width: 40rem; }
+
+/* rests, death saves, conditions */
+.deathsaves {
+  width: 100%; display: flex; gap: 0.8rem; align-items: center;
+  border: 1px solid var(--accent); border-radius: 6px; padding: 0.35rem 0.7rem; margin-top: 0.5rem;
+}
+.deathsaves .pip.fail { background: var(--accent); }
+.deathsaves .pip.fail.used, .deathsaves .pip.used { background: var(--panel2); }
+.conditionbar { width: 100%; display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
+.condchip {
+  background: var(--panel2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.08rem 0.55rem; cursor: pointer; font-size: 0.72rem;
+}
+.condchip.active { color: var(--gold); border-color: var(--gold); }
+
+/* ---------- creation wizard ---------- */
+.wizard { max-width: 60rem; margin-top: 0.5rem; }
+.wizsteps { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.9rem; align-items: center; }
+.wizsteps button {
+  background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 4px; padding: 0.25rem 0.6rem; cursor: pointer; font-size: 0.8rem;
+  font-variant: small-caps;
+}
+.wizsteps button.active { color: var(--gold); border-color: var(--gold); }
+.wizsteps button.done { color: var(--green); }
+.pickgrid { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.pickcard {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.5rem 0.8rem; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; min-width: 7.5rem;
+}
+.pickgrid.small .pickcard { min-width: 0; padding: 0.3rem 0.6rem; flex-direction: row; gap: 0.4rem; }
+.pickcard.active { border-color: var(--gold); color: var(--gold); }
+.pickcard.dim { opacity: 0.55; }
+.pickcard:hover { border-color: var(--text); }
+.wizhint { margin: 0.5rem 0; font-size: 0.88rem; width: 100%; }
+.bonuspick { margin-right: 0.7rem; }
+.abilityassign { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.abilityassign .abilitybox { padding: 0.5rem 0.7rem; min-width: 7rem; }
+.abilityassign .abilitybox.primary { border-color: var(--gold); }
+.abilityassign input { width: 3.5rem; text-align: center; }
+.warn { color: var(--red-text); }
+
+/* level up */
+.levelup { min-width: 26rem; max-width: 32rem; text-align: left; }
+
+/* homebrew */
+.homebrew { max-width: 56rem; }
+.homebrew h2, .homebrew h3 { color: var(--gold); }
+.hb-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.hb-field { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--gold-dim); gap: 0.15rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.hb-field input, .hb-field select { width: 9rem; }
+.homebrew textarea.notes { min-height: 8rem; margin-top: 0.5rem; }
+.homebrew form input[required] { width: 16rem; }
+
+/* ---------- print / export ---------- */
+@media print {
+  :root { color-scheme: light; }
+  body { background: #fff; color: #111; }
+  header, nav.types, .rolllog, .conditionbar, .hpbtn, .statpill.rests,
+  button.linkish, .bigbutton, .sheettabs { display: none !important; }
+  .sheet, .sheet-main, .sheet-rail, .panel, .sheethead {
+    background: #fff !important; border-color: #999 !important; color: #111 !important;
+  }
+  .statpill, .abilitybox, .skillrow .skillmod, .skillrow > .muted { background: #fff !important; color: #111 !important; }
+  .statpill .statval, input.charname { color: #111 !important; }
+  button.rollable { border-bottom: none; color: #111 !important; }
+  .printsection { display: block !important; }
+}
+
+/* wizard: pinned next bar */
+.wiznext {
+  position: sticky; bottom: 0; display: flex; align-items: center; gap: 0.8rem;
+  background: var(--bg); border-top: 1px solid var(--border);
+  padding: 0.6rem 0; margin-top: 0.6rem; z-index: 10;
+}
+
+/* ---------- DM pivot: elevation, depth, character ---------- */
+.lich-watermark {
+  position: fixed; right: 17rem; bottom: -2rem; width: 22rem; height: auto;
+  opacity: 0.14; pointer-events: none; z-index: 0;
+  filter: drop-shadow(0 0 30px rgba(211, 76, 76, 0.25));
+}
+.content, .rolllog { position: relative; z-index: 1; }
+.crest { flex-shrink: 0; align-self: center; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
+header { gap: 0.7rem; align-items: center; background: linear-gradient(180deg, #1c1a16, #131210); border-bottom: 1px solid var(--gold-dim); }
+
+/* floating feel: shadows + lift on interactive surfaces */
+nav.types button, .bigbutton, .pickcard, .statpill, .hpbtn, .dicetray button,
+.advquery-buttons button, .sheettabs button, .toolbar select, .toolbar input,
+.condchip, .levelpips button {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+nav.types button:hover, .bigbutton:hover, .pickcard:hover, .dicetray button:hover,
+.condchip:hover, .hpbtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.55);
+}
+.bigbutton { box-shadow: 0 3px 10px rgba(168, 50, 50, 0.4); border-radius: 8px; }
+.bigbutton:hover { box-shadow: 0 6px 18px rgba(168, 50, 50, 0.55); }
+
+/* cards float above the page */
+.detail, .spellcard, .classpage, .panel, .wizhint, .statblock, .sheethead,
+.sheet-main, .rollcard, .featurebox, .advquery {
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+}
+.rollcard { border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.4); }
+nav.types button, .pickcard, .statpill { border-radius: 9px; }
+
+/* page vignette for depth */
+body {
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(201, 168, 106, 0.05), transparent 50%),
+    radial-gradient(ellipse at 90% 110%, rgba(168, 50, 50, 0.07), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+nav.types.primary { padding-bottom: 0.2rem; }
+nav.types.primary button { font-size: 0.9rem; padding: 0.4rem 0.95rem; }
+nav.types.primary button.active {
+  background: linear-gradient(180deg, #241f18, #1a1712);
+  box-shadow: 0 3px 10px rgba(201, 168, 106, 0.18);
+}
+
+/* ---------- DM screen ---------- */
+.dmscreen { margin-top: 0.5rem; }
+.dm-toolbar { display: flex; gap: 0.8rem; align-items: flex-start; flex-wrap: wrap; }
+.dm-kinds { display: flex; gap: 0.35rem; }
+.dm-kinds button {
+  background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 9px; padding: 0.4rem 0.9rem; cursor: pointer; font-variant: small-caps;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+}
+.dm-kinds button.active { color: var(--gold); border-color: var(--gold); }
+.dm-search { position: relative; flex: 1; min-width: 16rem; max-width: 30rem; }
+.dm-search input { width: 100%; }
+.dm-results {
+  position: absolute; top: 110%; left: 0; right: 0; z-index: 30;
+  background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.65); overflow: hidden;
+}
+.dm-results button {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  color: var(--text); padding: 0.45rem 0.8rem; cursor: pointer; font-size: 0.9rem;
+}
+.dm-results button:hover { background: var(--panel2); color: var(--gold); }
+.dm-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.8rem; }
+.dm-tab {
+  display: flex; align-items: center; border: 1px solid var(--border); border-radius: 9px 9px 0 0;
+  background: var(--panel); box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.dm-tab.active { border-color: var(--gold); background: var(--panel2); }
+.dm-tab-name {
+  background: none; border: none; color: var(--muted); padding: 0.4rem 0.3rem 0.4rem 0.8rem;
+  cursor: pointer; font-size: 0.88rem;
+}
+.dm-tab.active .dm-tab-name { color: var(--gold); }
+.dm-tab-close {
+  background: none; border: none; color: var(--muted); cursor: pointer; padding: 0.4rem 0.6rem 0.4rem 0.3rem;
+}
+.dm-tab-close:hover { color: var(--red-text); }
+.dm-empty { max-width: 34rem; }
+.dm-content { margin-top: 0.2rem; }
