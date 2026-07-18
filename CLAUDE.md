@@ -58,6 +58,8 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
   `import-markdown.mjs` (personal Markdown enrichment → `_normalized/`).
 - `app/src/dm/DMScreen.jsx` — default view; independent pinnable entries with persistent
   combat HP/temp-HP/condition state and compendium handoff.
+- `app/src/dm/campaignState.js` — versioned, validated DM-console campaign persistence,
+  legacy-tab migration, portable JSON export/import, replace/merge semantics.
 - `app/src/compendium/` — Browser, Detail, prose-mechanics parser, StatBlock, SpellCard,
   GenericCard (structured metadata + adjustable weapon rolls), and ClassPage.
 - `app/src/dice/` — engine.js (Roll20-syntax parser, adv/dis, crit detection),
@@ -82,6 +84,9 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
   when source emphasis or punctuation prevented importer-level structure.
 - DM-console pins are independent playable instances: combatants persist current/max/
   temporary HP and conditions, and compendium detail pages can add entries directly.
+- Browser campaign backups are schema-versioned reference files. Import validates before
+  mutation, regenerates unique instance IDs, preserves duplicate combatants, retains
+  unavailable references, and never embeds compendium/character/homebrew content.
 - Edition layering: same slug in both editions → 2024 default, 2014 behind badge.
 
 ## State (2026-07-18)
@@ -92,10 +97,15 @@ bad winners replaced by complete same-identity alternatives; 167,225 local JSON
 records plus 1,838 personal-Markdown records normalized with zero entry/parse failures),
 DM screen, compendium, dice, rules engine, sheet, wizard, level-up, homebrew, rests /
 death saves / conditions, print view, Roll20-style theme with original premium lich,
-dragon, and death-knight artwork. Suites: 67 unit/data/API tests + 30 e2e steps, all passing.
+dragon, and death-knight artwork. Suites: 75 unit/data/API tests + 31 e2e steps, all passing.
 
 ## Changelog
 
+- 2026-07-18 · Portable campaign continuity: named browser campaigns, automatic legacy
+  tab migration, versioned JSON download/upload, replace or merge import, active-tab and
+  independent combat-state preservation, cross-browser sharing, strict size/schema/data
+  validation, and retained unavailable references. Campaign files exclude roll history,
+  device preferences, compendium payloads, and server-owned character/homebrew records.
 - 2026-07-18 · Playability/completeness gate: removed The Vorga and 10,516 other
   statless/blank imported shells from public results while falling back to complete
   duplicate identities; repaired emphasized-action parsing; added attack/damage/heal/

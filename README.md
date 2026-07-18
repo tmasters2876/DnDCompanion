@@ -20,6 +20,19 @@ npm run dev          # server on :5177, app on :5176
 Open http://localhost:5176 — it lands on the DM screen. For a production build:
 `npm start` (serves everything on :5177, reachable over LAN).
 
+## Campaign backups and sharing
+
+Name the current campaign on the DM screen, then use **Export campaign** to download a
+versioned `.dnd-campaign.json` file. It contains pinned DM tabs, the active tab, and each
+independent combatant's current/max HP, temporary HP, and conditions. **Import campaign**
+can replace the current browser campaign or merge the file as additional tabs.
+
+Campaign files intentionally contain references rather than complete compendium data.
+They are designed for backup and sharing between browsers connected to the same server.
+Characters and homebrew remain server-side files, while roll history and saved attack
+modifiers remain browser preferences. An unavailable reference is retained and clearly
+identified instead of being silently removed.
+
 ## Data
 
 - `npm run data:fetch` — downloads the [5e-bits SRD database](https://github.com/5e-bits/5e-database)

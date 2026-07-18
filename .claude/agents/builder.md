@@ -28,5 +28,9 @@ Execution discipline:
    in the app; never paper over a blank card with a name alone.
 7. Compliance: locally authorized inputs may be processed, but personal source and
    normalized files stay gitignored and are not published by a general push request.
+8. Browser campaign state is durable product data. Preserve legacy localStorage during
+   migrations; export only versioned/sanitized tab references and tracker state; never
+   silently discard duplicates or unavailable references; keep character/homebrew
+   records server-side unless a separate backup feature explicitly includes them.
 
 Report what you changed file-by-file, which tests you added, and what you ran.

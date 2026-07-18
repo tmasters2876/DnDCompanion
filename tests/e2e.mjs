@@ -4,7 +4,7 @@
 import { chromium } from 'playwright';
 import { spawn, execSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -100,8 +100,89 @@ await step('dm screen: tabs survive reload', async () => {
   await page.reload();
   await page.waitForSelector('.dm-tab');
   if ((await page.$$eval('.dm-tab', (els) => els.length)) !== 2) throw new Error('tabs not persisted');
+});
+await step('campaign export/import preserves duplicate combatants and shares across browsers', async () => {
+  await page.locator('.dm-tab', { hasText: 'Fireball' }).locator('.dm-tab-close').click();
+  await page.locator('.dm-tab-name', { hasText: 'Goblin Warrior' }).click();
+  await page.waitForSelector('.combat-tracker');
+  const maxHp = Number((await page.locator('.combat-tracker strong').textContent()).match(/\/\s*(\d+)/)?.[1]);
+  if (!maxHp) throw new Error('could not read Goblin Warrior max HP');
+  await page.fill('.combat-tracker input[aria-label="HP adjustment"]', '2');
+  await page.click('.combat-tracker .damage-button');
+  await page.waitForSelector(`.dm-tab:has-text("${maxHp - 2}/${maxHp}")`);
+  await page.fill('.dm-search input', 'goblin warrior');
+  await page.waitForSelector('.dm-results button');
+  await page.locator('.dm-results button', { hasText: 'Goblin Warrior' }).first().click();
+  await page.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 2);
+  await page.fill('.combat-tracker input[aria-label="HP adjustment"]', '1');
+  await page.click('.combat-tracker .damage-button');
+  await page.waitForSelector(`.dm-tab:has-text("${maxHp - 1}/${maxHp}")`);
+  await page.fill('input[aria-label="Campaign name"]', 'E2E Shared Campaign');
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('.campaign-toolbar button:has-text("Export campaign")'),
+  ]);
+  const campaignBuffer = readFileSync(await download.path());
+  const exported = JSON.parse(campaignBuffer.toString('utf8'));
+  if (exported.format !== 'dnd-companion-campaign' || exported.schemaVersion !== 1) throw new Error('bad campaign envelope');
+  if (exported.campaign.tabs.length !== 2) throw new Error('duplicate combatant was deduplicated');
+  if (exported.campaign.tabs.map((tab) => tab.tracker.current).join(',') !== `${maxHp - 2},${maxHp - 1}`) throw new Error('independent HP was not exported');
+
   await page.locator('.dm-tab-close').first().click();
-  await page.locator('.dm-tab-close').first().click();
+  await page.setInputFiles('.campaign-file-input', { name: 'shared.dnd-campaign.json', mimeType: 'application/json', buffer: campaignBuffer });
+  await page.waitForSelector('.campaign-import-dialog');
+  await page.click('.campaign-import-dialog button:has-text("Replace current")');
+  await page.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 2);
+  const restoredTabs = await page.$$eval('.dm-tab-name', (nodes) => nodes.map((node) => node.textContent));
+  if (!restoredTabs.some((text) => text.includes(`${maxHp - 2}/${maxHp}`)) || !restoredTabs.some((text) => text.includes(`${maxHp - 1}/${maxHp}`))) throw new Error(`bad restored HP: ${restoredTabs}`);
+  await page.reload();
+  await page.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 2);
+  if ((await page.inputValue('input[aria-label="Campaign name"]')) !== 'E2E Shared Campaign') throw new Error('campaign name did not persist');
+
+  const beforeInvalid = await page.locator('.dm-tab').count();
+  await page.setInputFiles('.campaign-file-input', { name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{broken') });
+  await page.waitForSelector('.campaign-notice.error');
+  if (await page.locator('.dm-tab').count() !== beforeInvalid) throw new Error('invalid import mutated the campaign');
+
+  const sharedContext = await browser.newContext({ viewport: { width: 1200, height: 850 } });
+  const sharedPage = await sharedContext.newPage();
+  sharedPage.on('pageerror', (error) => pageErrors.push(error.stack ?? String(error)));
+  await sharedPage.goto(`${BASE}/#/dm`);
+  await sharedPage.waitForSelector('.dmscreen');
+  await sharedPage.setInputFiles('.campaign-file-input', { name: 'shared.dnd-campaign.json', mimeType: 'application/json', buffer: campaignBuffer });
+  await sharedPage.waitForSelector('.campaign-import-dialog');
+  await sharedPage.click('.campaign-import-dialog button:has-text("Replace current")');
+  await sharedPage.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 2);
+  await sharedPage.setInputFiles('.campaign-file-input', { name: 'shared.dnd-campaign.json', mimeType: 'application/json', buffer: campaignBuffer });
+  await sharedPage.waitForSelector('.campaign-import-dialog');
+  await sharedPage.click('.campaign-import-dialog button:has-text("Merge with current")');
+  await sharedPage.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 4);
+  await sharedPage.reload();
+  await sharedPage.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 4);
+  await sharedContext.close();
+
+  const unavailable = structuredClone(exported);
+  unavailable.campaign.tabs[unavailable.campaign.activeTab].entityId = 'monster/missing-campaign-entry/test';
+  unavailable.campaign.tabs[unavailable.campaign.activeTab].slug = 'missing-campaign-entry';
+  unavailable.campaign.tabs[unavailable.campaign.activeTab].name = 'Missing Campaign Entry';
+  await page.setInputFiles('.campaign-file-input', {
+    name: 'unavailable.dnd-campaign.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(unavailable)),
+  });
+  await page.waitForSelector('.campaign-import-dialog');
+  await page.click('.campaign-import-dialog button:has-text("Replace current")');
+  await page.waitForSelector('.campaign-notice.success:has-text("unavailable reference")');
+  await page.waitForSelector('.campaign-unavailable:has-text("Missing Campaign Entry")');
+  if (await page.locator('.dm-tab').count() !== 2) throw new Error('unavailable reference was silently discarded');
+  const [recoveryDownload] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('.campaign-toolbar button:has-text("Export campaign")'),
+  ]);
+  const recovered = JSON.parse(readFileSync(await recoveryDownload.path(), 'utf8'));
+  if (!recovered.campaign.tabs.some((tab) => tab.slug === 'missing-campaign-entry')) throw new Error('unavailable reference could not be backed up again');
+
+  while (await page.locator('.dm-tab-close').count()) await page.locator('.dm-tab-close').first().click();
 });
 
 // ---- compendium ----

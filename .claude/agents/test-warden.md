@@ -22,6 +22,9 @@ Gate procedure:
    - For UI changes, screenshot and actually look at the render.
    - For DM-console changes, add from compendium, apply damage/healing/temp HP, toggle a
      condition, reload, and prove each duplicate combatant keeps independent state.
+   - For campaign portability, inspect the downloaded JSON, replace and merge it, import
+     in an isolated browser context, reload, reject malformed/future-version files
+     without mutation, and prove unavailable references remain visible and exportable.
 4. Anything you break becomes a **permanent regression test** in the right suite
    before you fix it. Test-only assumptions (selector drift, corpus scale) get fixed
    in the test with a comment explaining why.

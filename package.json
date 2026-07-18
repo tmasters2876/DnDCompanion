@@ -16,7 +16,7 @@
     "data:all": "npm run data:fetch && npm run data:build && npm run data:import",
     "dev": "concurrently -n server,app -c blue,green \"npm run dev -w server\" \"npm run dev -w app\"",
     "start": "npm run build -w app && node server/index.mjs",
-    "test": "node --test app/src/dice/engine.test.mjs app/src/compendium/mechanics.test.mjs app/src/rules/derive.test.mjs tests/import.test.mjs tests/markdown-import.test.mjs tests/compendium-usability.test.mjs tests/data-policy.test.mjs tests/data.test.mjs tests/api.test.mjs",
+    "test": "node --test app/src/dice/engine.test.mjs app/src/compendium/mechanics.test.mjs app/src/dm/campaignState.test.mjs app/src/rules/derive.test.mjs tests/import.test.mjs tests/markdown-import.test.mjs tests/compendium-usability.test.mjs tests/data-policy.test.mjs tests/data.test.mjs tests/api.test.mjs",
     "test:e2e": "node tests/e2e.mjs",
     "test:all": "npm test && npm run test:e2e"
   },
