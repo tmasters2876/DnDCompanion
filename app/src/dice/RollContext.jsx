@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { roll, withAdvantage } from './engine.js';
+import { roll, withAdvantage, uid } from './engine.js';
 
 // Central roller: any component calls rollDice(...) and the result lands in the
 // shared roll log. Rolls flagged `query: true` (attacks, checks, saves) first pop
@@ -22,7 +22,7 @@ export function RollProvider({ children }) {
   const commit = useCallback((label, sublabel, formula, mode) => {
     const result = roll(withAdvantage(formula, mode));
     setLog((l) => [{
-      id: crypto.randomUUID(),
+      id: uid(),
       ts: Date.now(),
       label, sublabel: sublabel ?? null, mode: mode ?? null,
       ...result,

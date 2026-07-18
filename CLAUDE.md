@@ -101,6 +101,10 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
   state, `/api/version` to match the staged release/data digest, the disposable
   container acceptance gate, and the live read-only deployment smoke after recreation.
 - Edition layering: same slug in both editions → 2024 default, 2014 behind badge.
+- Homebrew privacy: new entries default private (owner-key scoped via x-dm-key);
+  local-only entries never touch the server; legacy homebrew is frozen shared;
+  never echo owner keys in responses. No secure-context-only browser APIs without
+  a fallback — production is plain http on a LAN IP.
 
 ## State (2026-07-18)
 
@@ -117,6 +121,18 @@ read-only smoke: release `caf2bab`, data `sha256:6b61779b…`, 108,994 entries).
 77 unit/data/API tests + 35 e2e steps plus container acceptance, all passing.
 
 ## Changelog
+
+- 2026-07-18 · Homebrew privacy tiers: device DM profile (name + unguessable key,
+  pairing code for a second device), three tiers — local-only browser stash with
+  export/import, server-private (owner-key scoped, default), shared — with free
+  owner-only tier moves (unshare deletes visibility), legacy entries frozen shared,
+  optional campaign tag, lock/device badges, and merge into compendium/DM-screen/
+  detail/builder surfaces. Spoiler-scoping by design, not cryptography. Also: NAS
+  dice fix (crypto.randomUUID needs a secure context — uid() fallback + an
+  insecure-origin e2e step), per-type search/filter persistence across back-to-list
+  with a clear-filters control, and a real cross-type filter-leak bug the gate
+  caught (saving state under the wrong type key emptied other lists). Suites now
+  80 fast tests + 38 e2e steps.
 
 - 2026-07-18 · Play-surface refinements: roll rail is now truly fixed (root cause: a
   later `position: relative` override was defeating `position: sticky`) with a clean

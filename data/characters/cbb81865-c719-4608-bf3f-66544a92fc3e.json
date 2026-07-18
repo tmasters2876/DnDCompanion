@@ -1,0 +1,90 @@
+{
+ "name": "New Adventurer",
+ "edition": "2024",
+ "abilities": {
+  "str": 15,
+  "dex": 14,
+  "con": 13,
+  "int": 12,
+  "wis": 10,
+  "cha": 8
+ },
+ "classes": [
+  {
+   "class": "fighter",
+   "subclass": null,
+   "level": 1,
+   "hpRolls": [
+    null
+   ]
+  }
+ ],
+ "species": "human",
+ "background": "soldier",
+ "proficiencies": {
+  "skills": [
+   "athletics",
+   "perception"
+  ],
+  "expertise": [],
+  "tools": [],
+  "languages": [
+   "common"
+  ]
+ },
+ "feats": [],
+ "equipment": [
+  {
+   "item": "chain-mail",
+   "qty": 1,
+   "equipped": true
+  },
+  {
+   "item": "longsword",
+   "qty": 1,
+   "equipped": true
+  },
+  {
+   "item": "shield",
+   "qty": 1,
+   "equipped": true
+  }
+ ],
+ "spells": {
+  "known": [],
+  "prepared": []
+ },
+ "hp": {
+  "current": 12,
+  "temp": 0
+ },
+ "slotsUsed": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "pactUsed": 0,
+ "conditions": [],
+ "deathSaves": {
+  "success": 0,
+  "fail": 0
+ },
+ "currency": {
+  "cp": 0,
+  "sp": 0,
+  "ep": 0,
+  "gp": 10,
+  "pp": 0
+ },
+ "overrides": [],
+ "notes": "",
+ "id": "cbb81865-c719-4608-bf3f-66544a92fc3e",
+ "createdAt": "2026-07-18T19:39:04.014Z",
+ "updatedAt": "2026-07-18T19:39:04.014Z"
+}

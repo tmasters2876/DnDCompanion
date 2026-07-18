@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRoller } from '../dice/RollContext.jsx';
+import { dmHeaders } from '../homebrew/dmProfile.js';
+import { stashSearch } from '../homebrew/localStash.js';
 
 // Full-page listings with per-type filters. The whole type list is fetched once
 // (local app, ≤1k summaries) and filtered client-side for instant response.
@@ -20,18 +22,45 @@ function Select({ value, onChange, options, label, fmt = String }) {
   );
 }
 
+// Search/filter state survives detail-and-back navigation (per type, per session)
+// so "back to list" returns to the narrowed list, not the full corpus.
+const stateKey = (type) => `dnd-companion.browse.${type}`;
+const loadBrowseState = (type) => {
+  try { return JSON.parse(sessionStorage.getItem(stateKey(type))) ?? {}; } catch { return {}; }
+};
+
 export default function Browser({ type, onOpen }) {
   const { rollDice } = useRoller();
   const [rows, setRows] = useState([]);
-  const [q, setQ] = useState('');
-  const [edition, setEdition] = useState('');
-  const [f, setF] = useState({});
+  const [q, setQ] = useState(() => loadBrowseState(type).q ?? '');
+  const [edition, setEdition] = useState(() => loadBrowseState(type).edition ?? '');
+  const [f, setF] = useState(() => loadBrowseState(type).f ?? {});
   const set = (k) => (v) => setF((prev) => ({ ...prev, [k]: v }));
+  const hasNarrowing = q !== '' || edition !== '' || Object.values(f).some((v) => v !== '' && v !== undefined);
+  const clearAll = () => { setQ(''); setEdition(''); setF({}); };
+
+  // Save keyed by the SETTLED type (ref), never the changing prop: on a type
+  // switch the state variables still hold the previous type's filters for one
+  // render, and writing them under the new key would leak filters across types
+  // (monster CR=10 emptying the class list — a caught-in-e2e bug).
+  const mountedType = React.useRef(type);
+  useEffect(() => {
+    sessionStorage.setItem(stateKey(mountedType.current), JSON.stringify({ q, edition, f }));
+  }, [q, edition, f]);
+
+  // restore on type CHANGE only — mount already restored via initializers, and
+  // re-running on mount would clobber anything the user typed before effects ran
+  useEffect(() => {
+    if (mountedType.current === type) return;
+    mountedType.current = type;
+    const restored = loadBrowseState(type);
+    setQ(restored.q ?? ''); setEdition(restored.edition ?? ''); setF(restored.f ?? {});
+  }, [type]);
 
   useEffect(() => {
-    setF({}); setQ('');
-    fetch(`/api/compendium/${type}?limit=50000${edition ? `&edition=${edition}` : ''}`)
-      .then((r) => r.json()).then((d) => setRows(d.results));
+    fetch(`/api/compendium/${type}?limit=50000${edition ? `&edition=${edition}` : ''}`, { headers: dmHeaders() })
+      .then((r) => r.json())
+      .then((d) => setRows([...stashSearch(type, ''), ...d.results]));
   }, [type, edition]);
 
   const filtered = useMemo(() => rows.filter((r) => {
@@ -109,6 +138,9 @@ export default function Browser({ type, onOpen }) {
         {(type === 'feat' || type === 'rule') && (
           <Select value={f.category ?? ''} onChange={set('category')} options={uniq(rows, 'category')} label="Category" />
         )}
+        {hasNarrowing && (
+          <button className="linkish clear-filters" onClick={clearAll}>clear filters</button>
+        )}
       </div>
       <table className="listing">
         <thead>
@@ -137,7 +169,11 @@ export default function Browser({ type, onOpen }) {
                 return <td key={c} className="muted">{v == null || typeof v === 'object' ? '—' : v}</td>;
               })}
               <td>{r.edition === '2014' ? <span className="badge legacy">legacy</span> : r.edition}</td>
-              <td className="muted">{r.source.name}</td>
+              <td className="muted">
+                {r.source.name}
+                {r.tier === 'private' && <span className="badge tier-private">private</span>}
+                {r.tier === 'local' && <span className="badge tier-local">this device</span>}
+              </td>
             </tr>
           ))}
         </tbody>

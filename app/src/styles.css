@@ -639,3 +639,12 @@ label.modinput {
 }
 label.modinput input { width: 3.2rem; padding: 0.15rem 0.3rem; text-align: center; }
 button.rollable.atk { font-variant: small-caps; letter-spacing: 0.04em; }
+
+/* privacy tiers */
+.badge.tier-private { color: var(--red-text); border-color: var(--accent); }
+.badge.tier-local { color: #7fb0d8; border-color: #4a6b85; }
+.profile-line { margin: 0.2rem 0 0.6rem; }
+.tier-hint { margin: 0.2rem 0 0.5rem; font-size: 0.8rem; }
+.stash-tools { display: flex; gap: 1rem; align-items: center; }
+.stash-import input { display: none; }
+.clear-filters { align-self: center; }

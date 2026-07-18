@@ -33,6 +33,14 @@ for (let i = 0; i < 40; i++) {
   try { if ((await fetch(`${BASE}/api/compendium/types`)).ok) break; } catch { /* retry */ }
   await new Promise((r) => setTimeout(r, 250));
 }
+// self-clean: stale artifacts from crashed runs would 409 this run's steps
+{
+  const { readdirSync, unlinkSync } = await import('node:fs');
+  const homebrewDir = join(ROOT, 'data', 'homebrew');
+  for (const file of readdirSync(homebrewDir)) {
+    if (file.includes('e2e-')) unlinkSync(join(homebrewDir, file));
+  }
+}
 
 async function launch() {
   try { return await chromium.launch(); } catch { /* fall through to cached browser */ }
@@ -269,6 +277,7 @@ await step('Fire Giant exposes described attacks/damage and becomes a tracked DM
   await page.locator('.dm-tab-close').first().click();
 });
 await step('spell attack button rolls with adjustable modifier', async () => {
+  await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
   await page.goto(`${BASE}/#/spell`);
   await page.waitForSelector('.toolbar input');
   await page.fill('.toolbar input', 'guiding bolt');
@@ -281,6 +290,7 @@ await step('spell attack button rolls with adjustable modifier', async () => {
   await page.waitForFunction(() => [...document.querySelectorAll('.formula')].some((f) => f.textContent === '1d20+7'));
 });
 await step('native weapon cards expose adjustable attack and damage controls', async () => {
+  await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
   await page.goto(`${BASE}/#/item`);
   await page.waitForSelector('.toolbar input');
   await page.fill('.toolbar input', 'quarterstaff');
@@ -294,15 +304,21 @@ await step('native weapon cards expose adjustable attack and damage controls', a
   await page.waitForFunction(() => [...document.querySelectorAll('.formula')].some((formula) => formula.textContent === '1d20+6'));
 });
 await step('CR filter works', async () => {
+  await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
   await page.goto(`${BASE}/#/monster`);
   await page.waitForSelector('.toolbar select >> nth=1');
   await page.locator('.toolbar select').nth(1).selectOption('10');
   await page.waitForFunction(() => [...document.querySelectorAll('table.listing tbody td')].some((t) => t.textContent === '10'));
 });
 await step('class page: progression table + feature popup', async () => {
+  await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
   await page.goto(`${BASE}/#/spell`); // hash-nav quirk: land elsewhere first
   await page.click('nav.types button:has-text("class")');
-  await page.locator('a.rowlink', { hasText: /^Wizard$/ }).click();
+  // wait for the CLASS list's input specifically — filling before React switches
+  // routes would search the spell list instead
+  await page.waitForSelector('.toolbar input[placeholder*="class"]');
+  await page.fill('.toolbar input', 'wizard'); // search-first: deterministic at any corpus size
+  await page.locator('a.rowlink', { hasText: /^Wizard$/ }).first().click();
   await page.waitForSelector('table.progression');
   await page.click('table.progression button.rollable >> nth=0');
   await page.waitForSelector('.featurebox');
@@ -478,16 +494,109 @@ await step('sheet: print button exists (print view)', async () => {
 
 // ---- homebrew via UI ----
 console.log('homebrew…');
-await step('homebrew form creates a spell that joins the compendium', async () => {
+await step('homebrew: DM profile + private entry invisible to a second browser', async () => {
+  await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
   await page.click('nav.types button:has-text("homebrew")');
+  await page.waitForSelector('.profile-setup');
+  await page.fill('.profile-setup input[placeholder="DM name"]', 'E2E DM');
+  await page.click('.profile-setup .bigbutton');
+  await page.waitForSelector('.profile-line');
   await page.waitForSelector('.homebrew form');
-  await page.fill('.homebrew form input[required]', 'E2E Test Bolt');
-  await page.fill('.homebrew textarea', 'A bolt of pure testing.');
-  await page.click('.homebrew .bigbutton');
-  await page.waitForFunction(() => document.body.textContent.includes('live in the compendium'));
-  const r = await fetch(`${BASE}/api/compendium/spell/e2e-test-bolt`);
-  if (!r.ok) throw new Error('homebrew spell not queryable');
-  await fetch(`${BASE}/api/homebrew/spell/e2e-test-bolt`, { method: 'DELETE' });
+  await page.fill('.homebrew form input[required]', 'E2E Secret Bolt');
+  await page.fill('.homebrew textarea', 'A bolt of secret testing.');
+  await page.click('.homebrew form .bigbutton');
+  await page.waitForFunction(() => document.body.textContent.includes('private to your DM profile'));
+  // owner sees it merged in compendium search with a badge
+  await page.goto(`${BASE}/#/spell`);
+  await page.waitForSelector('.toolbar input');
+  await page.fill('.toolbar input', 'e2e secret bolt');
+  await page.waitForSelector('.badge.tier-private');
+  // a fresh context (no profile) must see nothing anywhere
+  const strangerContext = await browser.newContext();
+  const stranger = await strangerContext.newPage();
+  await stranger.goto(`${BASE}/#/spell`);
+  await stranger.waitForSelector('.toolbar input');
+  await stranger.fill('.toolbar input', 'e2e secret bolt');
+  await stranger.waitForTimeout(600);
+  if (await stranger.locator('a.rowlink', { hasText: 'E2E Secret Bolt' }).count()) {
+    throw new Error('private entry leaked to a stranger context');
+  }
+  const anonApi = await fetch(`${BASE}/api/compendium/spell/e2e-secret-bolt`);
+  if (anonApi.ok) throw new Error('private entry readable without key');
+  await strangerContext.close();
+});
+await step('homebrew: share makes it public, unshare hides it again', async () => {
+  await page.click('nav.types button:has-text("homebrew")');
+  await page.waitForSelector('.homebrew table');
+  await page.locator('tr', { hasText: 'E2E Secret Bolt' }).locator('button:has-text("share")').click();
+  await page.waitForFunction(() => document.body.textContent.includes('is now shared'));
+  const nowPublic = await fetch(`${BASE}/api/compendium/spell/e2e-secret-bolt`);
+  if (!nowPublic.ok) throw new Error('shared entry should be public');
+  await page.locator('tr', { hasText: 'E2E Secret Bolt' }).locator('button:has-text("unshare")').click();
+  await page.waitForFunction(() => document.body.textContent.includes('private again'));
+  if ((await fetch(`${BASE}/api/compendium/spell/e2e-secret-bolt`)).ok) throw new Error('unshared entry still public');
+  page.once('dialog', (d) => d.accept()); // delete confirms; unhandled dialogs auto-dismiss
+  await page.locator('tr', { hasText: 'E2E Secret Bolt' }).locator('button:has-text("delete")').click();
+  await page.waitForFunction(() => !document.querySelector('.homebrew table')?.textContent.includes('E2E Secret Bolt'));
+});
+await step('homebrew: local-only entry stays off the server, merges into owner search', async () => {
+  await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
+  await page.waitForSelector('.homebrew form');
+  await page.selectOption('.homebrew form select[aria-label="Privacy tier"]', 'local');
+  await page.fill('.homebrew form input[required]', 'E2E Device Bolt');
+  await page.fill('.homebrew textarea', 'Never leaves this browser.');
+  await page.click('.homebrew form .bigbutton');
+  await page.waitForFunction(() => document.body.textContent.includes('this device only'));
+  const serverCheck = await fetch(`${BASE}/api/compendium/spell/e2e-device-bolt`);
+  if (serverCheck.ok) throw new Error('local entry reached the server');
+  await page.goto(`${BASE}/#/spell`);
+  await page.waitForSelector('.toolbar input');
+  await page.fill('.toolbar input', 'e2e device bolt');
+  await page.waitForSelector('.badge.tier-local');
+  await page.locator('a.rowlink', { hasText: 'E2E Device Bolt' }).first().click();
+  await page.waitForSelector('.spellcard');
+  await page.click('nav.types button:has-text("homebrew")');
+  page.once('dialog', (d) => d.accept());
+  await page.locator('tr', { hasText: 'E2E Device Bolt' }).locator('button:has-text("delete")').click();
+  await page.waitForFunction(() => !document.body.textContent.includes('E2E Device Bolt'));
+});
+await step('search state survives back-to-list; clear filters resets', async () => {
+  await page.evaluate(() => sessionStorage.clear()); // fresh lists: persistence is a feature, tests need determinism
+  await page.goto(`${BASE}/#/monster`);
+  await page.waitForSelector('.toolbar input');
+  await page.fill('.toolbar input', 'goblin warrior');
+  await page.waitForSelector('a.rowlink:has-text("Goblin Warrior")');
+  await page.locator('a.rowlink', { hasText: /^Goblin Warrior$/ }).first().click();
+  await page.waitForSelector('.statblock');
+  await page.locator('a.rowlink', { hasText: 'back to list' }).click();
+  await page.waitForSelector('.toolbar input');
+  if ((await page.inputValue('.toolbar input')) !== 'goblin warrior') throw new Error('search box reset after back-to-list');
+  const rows = await page.locator('table.listing tbody tr').count();
+  if (rows > 30) throw new Error(`list not narrowed after back (${rows} rows)`);
+  await page.click('.clear-filters');
+  if ((await page.inputValue('.toolbar input')) !== '') throw new Error('clear filters left the query');
+});
+await step('insecure origin (NAS parity): rolls still land without crypto.randomUUID', async () => {
+  const os = await import('node:os');
+  const lanIp = Object.values(os.networkInterfaces()).flat()
+    .find((iface) => iface && !iface.internal && iface.family === 'IPv4')?.address;
+  if (!lanIp) return; // no LAN interface to test against
+  const insecureContext = await browser.newContext();
+  const insecurePage = await insecureContext.newPage();
+  const errors = [];
+  insecurePage.on('pageerror', (error) => errors.push(String(error)));
+  await insecurePage.goto(`http://${lanIp}:${PORT}/#/dm`);
+  await insecurePage.waitForSelector('.d20-quick', { timeout: 20000 });
+  const isInsecure = await insecurePage.evaluate(() => typeof crypto.randomUUID === 'undefined');
+  await insecurePage.click('.d20-quick');
+  await insecurePage.waitForSelector('.rollcard', { timeout: 5000 });
+  await insecurePage.click('.tray-toggle');
+  await insecurePage.fill('.rolllog form input', '2d6+3');
+  await insecurePage.press('.rolllog form input', 'Enter');
+  await insecurePage.waitForFunction(() => document.querySelectorAll('.rollcard').length >= 2);
+  if (errors.length) throw new Error(`page errors on insecure origin: ${errors[0]}`);
+  if (!isInsecure) results.push('    (note: origin was treated as secure; roll still verified)');
+  await insecureContext.close();
 });
 
 // ---- character list cleanup path ----

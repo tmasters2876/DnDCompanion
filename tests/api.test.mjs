@@ -140,9 +140,9 @@ test('homebrew: validation, create, immediate compendium presence, delete', asyn
   assert.equal(bad.status, 400);
 
   const good = await fetch(`${API}/homebrew`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-dm-key': 'testkey-zap-0000-zap-000000000000' },
     body: JSON.stringify({
-      type: 'spell', slug: 'test-zap', name: 'Test Zap', edition: '2024',
+      type: 'spell', slug: 'test-zap', name: 'Test Zap', edition: '2024', tier: 'shared',
       data: { level: 1, school: 'evocation', classes: ['wizard'], damage: { dice: '2d8', type: 'lightning', scaling: {} }, components: { v: true, s: false, m: false } },
       text: 'Zap.',
     }),
@@ -153,7 +153,7 @@ test('homebrew: validation, create, immediate compendium presence, delete', asyn
   assert.equal(inCompendium.status, 200);
   assert.equal(inCompendium.body.source.key, 'homebrew');
 
-  const del = await fetch(`${API}/homebrew/spell/test-zap`, { method: 'DELETE' });
+  const del = await fetch(`${API}/homebrew/spell/test-zap`, { method: 'DELETE', headers: { 'x-dm-key': 'testkey-zap-0000-zap-000000000000' } });
   assert.equal(del.status, 200);
   assert.equal((await get('/compendium/spell/test-zap')).status, 404);
 
@@ -179,4 +179,85 @@ test('audit endpoint exposes importer gaps and boot dedupe metrics', async () =>
   assert.ok(body.markdown?.summary.filesScanned > 0);
   assert.equal(body.markdown.sourceDirectory, 'data/pdfs');
   assert.doesNotMatch(JSON.stringify(body), /\/Users\/|sourceDirectory":"\//);
+});
+
+// ---- homebrew privacy tiers ----
+const KEY_A = 'testkey-aaaa-1111-aaaa-111111111111';
+const KEY_B = 'testkey-bbbb-2222-bbbb-222222222222';
+// content-type only when a body exists — Fastify 400s an empty JSON body
+const hb = (path, opts = {}, key) => fetch(`${API}${path}`, {
+  ...opts,
+  headers: {
+    ...(opts.body ? { 'content-type': 'application/json' } : {}),
+    ...(key ? { 'x-dm-key': key } : {}),
+    ...(opts.headers ?? {}),
+  },
+});
+
+test('private homebrew: owner-only visibility in list and compendium', async () => {
+  const created = await hb('/homebrew', {
+    method: 'POST',
+    body: JSON.stringify({ type: 'spell', slug: 'tier-test-secret', name: 'Tier Test Secret', edition: '2024', tier: 'private', data: { level: 1, school: 'evocation', classes: [], components: { v: true, s: false, m: false } }, text: 'Secret.' }),
+  }, KEY_A);
+  assert.equal(created.status, 201);
+
+  const anonList = await (await hb('/homebrew')).json();
+  assert.ok(!anonList.some((e) => e.slug === 'tier-test-secret'), 'anonymous list must not include private entries');
+  const strangerList = await (await hb('/homebrew', {}, KEY_B)).json();
+  assert.ok(!strangerList.some((e) => e.slug === 'tier-test-secret'), 'other DMs must not see private entries');
+  const ownerList = await (await hb('/homebrew', {}, KEY_A)).json();
+  const mine = ownerList.find((e) => e.slug === 'tier-test-secret');
+  assert.ok(mine?.mine, 'owner sees the entry flagged as theirs');
+  assert.equal(mine.tier, 'private');
+
+  const anonSearch = await (await hb('/compendium/spell?q=tier+test+secret')).json();
+  assert.equal(anonSearch.results.length, 0, 'compendium search must hide private entries');
+  const anonDetail = await hb('/compendium/spell/tier-test-secret');
+  assert.equal(anonDetail.status, 404, 'compendium detail must 404 without the key');
+  const ownerSearch = await (await hb('/compendium/spell?q=tier+test+secret', {}, KEY_A)).json();
+  assert.equal(ownerSearch.results.length, 1, 'owner search must find the private entry');
+});
+
+test('tier moves are owner-only and unshare truly hides', async () => {
+  const denied = await hb('/homebrew/spell/tier-test-secret/tier', { method: 'PUT', body: JSON.stringify({ tier: 'shared' }) }, KEY_B);
+  assert.equal(denied.status, 403, `expected 403, got ${denied.status}: ${await denied.text()}`);
+
+  const shared = await hb('/homebrew/spell/tier-test-secret/tier', { method: 'PUT', body: JSON.stringify({ tier: 'shared' }) }, KEY_A);
+  assert.equal(shared.status, 200);
+  const anonNow = await (await hb('/compendium/spell/tier-test-secret')).json();
+  assert.equal(anonNow.slug, 'tier-test-secret', 'shared entry visible to everyone');
+
+  const unshared = await hb('/homebrew/spell/tier-test-secret/tier', { method: 'PUT', body: JSON.stringify({ tier: 'private' }) }, KEY_A);
+  assert.equal(unshared.status, 200);
+  assert.equal((await hb('/compendium/spell/tier-test-secret')).status, 404, 'unshared entry hidden again');
+
+  const strangerDelete = await hb('/homebrew/spell/tier-test-secret', { method: 'DELETE' }, KEY_B);
+  assert.equal(strangerDelete.status, 403);
+  const ownerDelete = await hb('/homebrew/spell/tier-test-secret', { method: 'DELETE' }, KEY_A);
+  assert.equal(ownerDelete.status, 200);
+});
+
+test('keyless saves are rejected; legacy entries stay frozen and visible', async () => {
+  const keyless = await hb('/homebrew', {
+    method: 'POST',
+    body: JSON.stringify({ type: 'spell', slug: 'tier-test-keyless', name: 'Keyless', data: {}, text: '' }),
+  });
+  assert.equal(keyless.status, 400);
+
+  // simulate a pre-tier legacy file via the filesystem (as upgrades encounter)
+  const { writeFileSync, unlinkSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const legacyPath = join(ROOT, 'data', 'homebrew', 'rule-tier-test-legacy.json');
+  writeFileSync(legacyPath, JSON.stringify({ id: 'rule/tier-test-legacy/homebrew', type: 'rule', slug: 'tier-test-legacy', name: 'Tier Legacy', edition: '2024', source: { key: 'homebrew', name: 'Homebrew' }, data: {}, text: 'Legacy.' }));
+  await hb('/compendium/reload');
+  try {
+    const anon = await (await hb('/homebrew')).json();
+    const legacy = anon.find((e) => e.slug === 'tier-test-legacy');
+    assert.ok(legacy?.legacy, 'legacy entry visible to everyone and flagged');
+    const freeze = await hb('/homebrew/rule/tier-test-legacy/tier', { method: 'PUT', body: JSON.stringify({ tier: 'private' }) }, KEY_A);
+    assert.equal(freeze.status, 403, 'legacy entries are frozen shared');
+  } finally {
+    unlinkSync(legacyPath);
+    await hb('/compendium/reload');
+  }
 });

@@ -3,6 +3,8 @@ import StatBlock from './StatBlock.jsx';
 import SpellCard from './SpellCard.jsx';
 import ClassPage from './ClassPage.jsx';
 import GenericCard from './GenericCard.jsx';
+import { dmHeaders } from '../homebrew/dmProfile.js';
+import { stashResolve } from '../homebrew/localStash.js';
 
 export default function Detail({ type, slug, edition, onBack, onSwitchEdition, onAddToDm }) {
   const [entry, setEntry] = useState(null);
@@ -10,7 +12,9 @@ export default function Detail({ type, slug, edition, onBack, onSwitchEdition, o
 
   useEffect(() => {
     setEntry(null); setError(null);
-    fetch(`/api/compendium/${type}/${slug}${edition ? `?edition=${edition}` : ''}`)
+    const local = stashResolve(type, slug);
+    if (local) { setEntry(local); return; }
+    fetch(`/api/compendium/${type}/${slug}${edition ? `?edition=${edition}` : ''}`, { headers: dmHeaders() })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
       .then(setEntry)
       .catch((e) => setError(e.message));

@@ -5,6 +5,8 @@ import GenericCard from '../compendium/GenericCard.jsx';
 import Sheet from '../sheet/Sheet.jsx';
 import { useRoller } from '../dice/RollContext.jsx';
 import { abilityMod, fmtMod } from '../dice/engine.js';
+import { dmHeaders } from '../homebrew/dmProfile.js';
+import { stashSearch, stashResolve } from '../homebrew/localStash.js';
 import {
   MAX_CAMPAIGN_FILE_BYTES,
   TRACKED_CONDITIONS,
@@ -137,8 +139,8 @@ export default function DMScreen({ pending, onPendingHandled }) {
         return;
       }
       const type = kind === 'npc' ? 'monster' : kind;
-      const res = await fetch(`/api/compendium/${type}?q=${encodeURIComponent(q)}&limit=800`);
-      let rows = (await res.json()).results;
+      const res = await fetch(`/api/compendium/${type}?q=${encodeURIComponent(q)}&limit=800`, { headers: dmHeaders() });
+      let rows = [...stashSearch(type, q), ...(await res.json()).results];
       if (kind === 'npc') rows = rows.filter((row) => row.creatureType?.toLowerCase() === 'humanoid');
       setResults(rows.slice(0, 12));
     }, 200);
@@ -147,10 +149,13 @@ export default function DMScreen({ pending, onPendingHandled }) {
 
   const fetchFull = useCallback(async (row) => {
     if (row.data || row.type === 'character' && row.classes) return row;
+    if (row.id?.endsWith?.('/local') || row.entityId?.endsWith?.('/local')) {
+      return stashResolve(row.type, row.slug);
+    }
     const url = row.type === 'character'
       ? `/api/characters/${row.id ?? row.entityId}`
       : `/api/compendium/${row.type}/${row.slug}${row.edition ? `?edition=${row.edition}` : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: dmHeaders() });
     if (!response.ok) return null;
     const full = await response.json();
     return row.type === 'character' ? { ...full, type: 'character', slug: full.id } : full;

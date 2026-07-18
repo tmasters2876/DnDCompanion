@@ -6,7 +6,8 @@ const cache = new Map(); // "type/slug" -> entry
 async function fetchEntry(type, slug) {
   const key = `${type}/${slug}`;
   if (cache.has(key)) return cache.get(key);
-  const res = await fetch(`/api/compendium/${type}/${slug}`);
+  const { dmHeaders } = await import('../homebrew/dmProfile.js');
+  const res = await fetch(`/api/compendium/${type}/${slug}`, { headers: dmHeaders() });
   const entry = res.ok ? await res.json() : null;
   cache.set(key, entry);
   return entry;

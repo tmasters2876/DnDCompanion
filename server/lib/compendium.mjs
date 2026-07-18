@@ -269,15 +269,20 @@ export function loadCompendium(dataDir) {
 
 // Edition layering: same (type, slug) in both editions resolves to 2024 unless
 // edition is requested explicitly.
-export function resolve(compendium, type, slug, edition) {
-  const matches = (compendium.byType.get(type) ?? []).filter((e) => e.slug === slug);
+// Private homebrew is visible only to its owner (spoiler scoping, not security:
+// the LAN threat model is accidental discovery). Legacy entries have no tier.
+export const visibleTo = (entry, dmKey) => entry.tier !== 'private' || (Boolean(dmKey) && entry.owner === dmKey);
+
+export function resolve(compendium, type, slug, edition, dmKey) {
+  const matches = (compendium.byType.get(type) ?? [])
+    .filter((e) => e.slug === slug && visibleTo(e, dmKey));
   if (!matches.length) return null;
   if (edition) return matches.find((e) => e.edition === edition) ?? null;
   return matches.find((e) => e.edition === '2024') ?? matches[0];
 }
 
-export function search(compendium, type, query) {
-  let list = compendium.byType.get(type) ?? [];
+export function search(compendium, type, query, dmKey) {
+  let list = (compendium.byType.get(type) ?? []).filter((e) => visibleTo(e, dmKey));
   const { q, edition, source, level, school, cr, itemType, category, class: cls, fullText } = query;
 
   if (edition) list = list.filter((e) => e.edition === edition);
@@ -310,6 +315,7 @@ export function summarize(entry) {
     edition: entry.edition,
     source: entry.source,
     provenance: entry.data?.provenance ?? [entry.source?.key].filter(Boolean),
+    ...(entry.tier ? { tier: entry.tier } : {}),
     ...(SUMMARY_FIELDS[entry.type]?.(entry.data) ?? {}),
   };
 }

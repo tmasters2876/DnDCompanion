@@ -77,3 +77,7 @@ export function withAdvantage(formula, mode) {
 
 export const fmtMod = (n) => (n >= 0 ? `+${n}` : `${n}`);
 export const abilityMod = (score) => Math.floor((score - 10) / 2);
+
+// crypto.randomUUID only exists in secure contexts (localhost/https). The NAS
+// serves plain http on a LAN IP, so every id-maker needs this fallback.
+export const uid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
