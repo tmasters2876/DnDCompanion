@@ -166,7 +166,13 @@ table.mdtable th, table.mdtable td { border: 1px solid var(--border); padding: 0
 .rolllog {
   width: 19rem; background: var(--panel); border-left: 1px solid var(--border);
   padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;
-  height: 100vh; position: sticky; top: 0;
+  height: 100vh; position: fixed; top: 0; right: 0; z-index: 5;
+}
+/* the rail is out of flow — reserve its lane */
+.content { margin-right: 19rem; }
+@media (max-width: 900px) {
+  .rolllog { position: static; width: auto; height: auto; border-left: none; border-top: 1px solid var(--border); }
+  .content { margin-right: 0; }
 }
 .rolllog-head { display: flex; justify-content: space-between; align-items: baseline; }
 .rolllog-head h2 { margin: 0; font-size: 0.92rem; color: var(--gold); }
@@ -174,6 +180,22 @@ table.mdtable th, table.mdtable td { border: 1px solid var(--border); padding: 0
   width: 100%; background: var(--panel2); border: 1px solid var(--border); border-radius: 4px;
   color: var(--text); padding: 0.4rem 0.6rem; font-family: ui-monospace, monospace; font-size: 0.85rem;
 }
+.quickdice { display: flex; gap: 0.35rem; }
+.d20-quick {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  background: linear-gradient(180deg, #2a1614, #1d100f); color: var(--red-text);
+  border: 1px solid var(--accent); border-radius: 7px; padding: 0.4rem 0; cursor: pointer;
+  font-weight: 700; font-size: 0.85rem; font-variant: small-caps; letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(168, 50, 50, 0.35);
+}
+.d20-quick:hover { color: #ff6b6b; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(168, 50, 50, 0.5); }
+.tray-toggle {
+  width: 2.2rem; background: var(--panel2); color: var(--gold); border: 1px solid var(--border);
+  border-radius: 7px; cursor: pointer; font-size: 1.05rem; font-weight: 700; line-height: 1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+}
+.tray-toggle:hover, .tray-toggle.open { border-color: var(--gold); }
+.tray-expanded { display: flex; flex-direction: column; gap: 0.4rem; }
 .dicetray { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .dicetray button {
   background: var(--panel2); color: var(--text); border: 1px solid var(--border);
@@ -453,7 +475,7 @@ textarea.notes {
   .lich-art { opacity: 0.38; }
 }
 @media (max-width: 1050px) { .bestiary-art { display: none; } }
-.content, .rolllog { position: relative; z-index: 1; }
+.content { position: relative; z-index: 1; }
 .crest { flex-shrink: 0; align-self: center; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
 header { gap: 0.7rem; align-items: center; background: linear-gradient(180deg, #1c1a16, #131210); border-bottom: 1px solid var(--gold-dim); }
 
@@ -555,7 +577,16 @@ nav.types.primary button.active {
 .dm-tab-name {
   background: none; border: none; color: var(--muted); padding: 0.4rem 0.3rem 0.4rem 0.8rem;
   cursor: pointer; font-size: 0.88rem;
+  max-width: 13rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.dm-filters { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.7rem; }
+.dm-filters button {
+  background: var(--panel2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.1rem 0.65rem; cursor: pointer; font-size: 0.76rem;
+  font-variant: small-caps; letter-spacing: 0.04em;
+}
+.dm-filters button.active { color: var(--gold); border-color: var(--gold); }
+.dm-filters button:hover { color: var(--text); }
 .dm-tab.active .dm-tab-name { color: var(--gold); }
 .dm-tab-close {
   background: none; border: none; color: var(--muted); cursor: pointer; padding: 0.4rem 0.6rem 0.4rem 0.3rem;

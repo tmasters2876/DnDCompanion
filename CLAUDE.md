@@ -114,10 +114,18 @@ dragon, and death-knight artwork. The production image preserves writable state 
 restart/recreate and exposes health/version release metadata; the Synology release is
 internal-only at `10.0.1.50:15177` and **live** (deployed 2026-07-18, verified by the
 read-only smoke: release `caf2bab`, data `sha256:6b61779b…`, 108,994 entries). Suites:
-77 unit/data/API tests + 31 e2e steps plus container acceptance, all passing.
+77 unit/data/API tests + 35 e2e steps plus container acceptance, all passing.
 
 ## Changelog
 
+- 2026-07-18 · Play-surface refinements: roll rail is now truly fixed (root cause: a
+  later `position: relative` override was defeating `position: sticky`) with a clean
+  collapsed face — d20 quick-roll + `+` expander revealing the full tray and formula
+  input (state remembered). DM screen gained pin filters (All/Monsters/NPCs/Characters/
+  Spells/… with counts) over the tab bar; kinds are derived, never stored, so existing
+  campaign files are unaffected; closing/activating tabs is instanceId-based and
+  filter-safe; tab names ellipsize. E2E: locked-rail scroll assertion, collapsed-tray
+  default, expander flow, and filter show/hide steps.
 - 2026-07-18 · First live NAS deployment. Fix: removed the `cpus:` hard cap from
   `deploy/synology/compose.yaml` — DSM's kernel lacks the CFS quota scheduler and
   rejects NanoCPUs on container create; memory limits remain enforced. Documented the

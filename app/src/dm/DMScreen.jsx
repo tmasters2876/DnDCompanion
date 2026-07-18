@@ -97,6 +97,29 @@ export default function DMScreen({ pending, onPendingHandled }) {
   const hydrating = useRef(new Set());
   const tabs = campaign.tabs;
   const active = Math.max(0, tabs.findIndex((tab) => tab.instanceId === campaign.activeInstanceId));
+  const [pinFilter, setPinFilter] = useState(() => localStorage.getItem('dnd-companion.dmpinfilter') ?? 'all');
+
+  // Pin kind is derived (never stored) so old campaigns filter correctly:
+  // humanoid monsters count as NPCs, matching the search facets.
+  const kindOfTab = useCallback((tab) => {
+    if (tab.type !== 'monster') return tab.type;
+    const hydrated = entries[tab.entityId];
+    return hydrated?.data?.creatureType?.toLowerCase() === 'humanoid' ? 'npc' : 'monster';
+  }, [entries]);
+  const visibleTabs = pinFilter === 'all' ? tabs : tabs.filter((tab) => kindOfTab(tab) === pinFilter);
+  const pinCounts = tabs.reduce((counts, tab) => {
+    const key = kindOfTab(tab);
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
+  const applyPinFilter = (next) => {
+    setPinFilter(next);
+    localStorage.setItem('dnd-companion.dmpinfilter', next);
+    const nextVisible = next === 'all' ? tabs : tabs.filter((tab) => kindOfTab(tab) === next);
+    if (nextVisible.length && !nextVisible.some((tab) => tab.instanceId === campaign.activeInstanceId)) {
+      setCampaign((value) => ({ ...value, activeInstanceId: nextVisible[0].instanceId }));
+    }
+  };
 
   useEffect(() => {
     try { saveStoredCampaign(localStorage, campaign); }
@@ -153,11 +176,12 @@ export default function DMScreen({ pending, onPendingHandled }) {
     openTab(pending).finally(() => onPendingHandled?.());
   }, [pending, onPendingHandled, openTab]);
 
-  const closeTab = (index) => {
+  const closeTab = (instanceId) => {
     setCampaign((current) => {
-      const closing = current.tabs[index];
-      const nextTabs = current.tabs.filter((_, tabIndex) => tabIndex !== index);
-      const activeInstanceId = closing?.instanceId === current.activeInstanceId
+      const index = current.tabs.findIndex((tab) => tab.instanceId === instanceId);
+      if (index < 0) return current;
+      const nextTabs = current.tabs.filter((tab) => tab.instanceId !== instanceId);
+      const activeInstanceId = instanceId === current.activeInstanceId
         ? nextTabs[Math.min(index, nextTabs.length - 1)]?.instanceId ?? null
         : current.activeInstanceId;
       return { ...current, tabs: nextTabs, activeInstanceId };
@@ -290,15 +314,32 @@ export default function DMScreen({ pending, onPendingHandled }) {
         </div>
       </div>
 
+      {tabs.length > 0 && (
+        <div className="dm-filters">
+          <button className={pinFilter === 'all' ? 'active' : ''} onClick={() => applyPinFilter('all')}>
+            All ({tabs.length})
+          </button>
+          {KINDS.filter((option) => pinCounts[option.key]).map((option) => (
+            <button
+              key={option.key}
+              className={pinFilter === option.key ? 'active' : ''}
+              onClick={() => applyPinFilter(option.key)}
+            >{option.label} ({pinCounts[option.key]})</button>
+          ))}
+        </div>
+      )}
       <div className="dm-tabs">
-        {tabs.map((tab, index) => (
+        {visibleTabs.map((tab) => (
           <div key={tab.instanceId} className={`dm-tab${tab.instanceId === campaign.activeInstanceId ? ' active' : ''}`}>
             <button className="dm-tab-name" onClick={() => setCampaign((value) => ({ ...value, activeInstanceId: tab.instanceId }))}>
               {tab.name}{tab.tracker ? ` · ${tab.tracker.current}/${tab.tracker.max}` : ''}
             </button>
-            <button className="dm-tab-close" title="close" onClick={() => closeTab(index)}>×</button>
+            <button className="dm-tab-close" title="close" onClick={() => closeTab(tab.instanceId)}>×</button>
           </div>
         ))}
+        {tabs.length > 0 && visibleTabs.length === 0 && (
+          <p className="muted dm-empty">No pinned {KINDS.find((option) => option.key === pinFilter)?.label.toLowerCase() ?? 'entries'} — switch to All.</p>
+        )}
         {tabs.length === 0 && <p className="muted dm-empty">Search here or add an entry from the compendium. Combatants keep independent HP, temporary HP, and conditions; every usable mechanic remains rollable.</p>}
       </div>
 

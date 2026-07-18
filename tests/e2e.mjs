@@ -96,6 +96,21 @@ await step('dm screen: pin a spell tab alongside and switch between tabs', async
   await page.waitForSelector('.dm-content .statblock');
   if ((await page.$$eval('.dm-tab', (els) => els.length)) !== 2) throw new Error('expected 2 tabs');
 });
+await step('dm screen: pin filters show one kind at a time and All restores', async () => {
+  // two pins exist: Goblin Warrior (monster) + Fireball (spell)
+  await page.waitForSelector('.dm-filters');
+  await page.locator('.dm-filters button', { hasText: 'Spells' }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 1);
+  const spellTab = await page.locator('.dm-tab-name').textContent();
+  if (!spellTab.includes('Fireball')) throw new Error(`spell filter shows: ${spellTab}`);
+  // active tab must follow the filter — content should now be the spell card
+  await page.waitForSelector('.dm-content .spellcard');
+  await page.locator('.dm-filters button', { hasText: 'Monsters' }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('.dm-tab-name')]
+    .every((tab) => tab.textContent.includes('Goblin Warrior')));
+  await page.locator('.dm-filters button', { hasText: /^All/ }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.dm-tab').length === 2);
+});
 await step('dm screen: tabs survive reload', async () => {
   await page.reload();
   await page.waitForSelector('.dm-tab');
@@ -295,9 +310,23 @@ await step('class page: progression table + feature popup', async () => {
 
 // ---- dice ----
 console.log('dice…');
-await step('dice tray quick-roll', async () => {
-  await page.click('.dicetray button:has-text("D20")');
+await step('roll rail is locked: stays visible after a long scroll', async () => {
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(200);
+  const box = await page.locator('.rolllog').boundingBox();
+  if (!box || box.y !== 0) throw new Error(`roll rail moved: y=${box?.y}`);
+  await page.evaluate(() => window.scrollTo(0, 0));
+});
+await step('d20 quick button rolls without opening the tray', async () => {
+  if (await page.locator('.dicetray').count()) throw new Error('tray should start collapsed');
+  await page.click('.d20-quick');
   await page.waitForFunction(() => [...document.querySelectorAll('.rolllabel')].some((e) => e.textContent === 'd20'));
+});
+await step('tray expander reveals full dice set and formula input', async () => {
+  await page.click('.tray-toggle');
+  await page.waitForSelector('.dicetray');
+  await page.click('.dicetray button:has-text("D12")');
+  await page.waitForFunction(() => [...document.querySelectorAll('.rolllabel')].some((e) => e.textContent === 'd12'));
 });
 await step('typed formula with keep-highest', async () => {
   await page.fill('.rolllog form input', '4d6kh3');
