@@ -5,8 +5,9 @@ fully rollable monster/NPC/spell tabs, a searchable compendium, click-to-roll di
 a Roll20-style roll log, a character builder with guided level-up, and light homebrew —
 all running on your own machine.
 
-**No copyrighted game content ships in this repo.** The app rebuilds its data from
-freely licensed sources (see below); anything else you add stays local and gitignored.
+The code repository ships no personal game-data collection. It rebuilds open data from
+the configured sources, while personally owned or authorized JSON/Markdown inputs stay
+local and gitignored.
 
 ## Quick start
 
@@ -27,13 +28,15 @@ Open http://localhost:5176 — it lands on the DM screen. For a production build
   Deep Magic, A5E Monstrous Menagerie, Black Flag SRD — all OGL/CC).
 - `npm run data:build` — normalizes everything into the internal schema
   ([docs/SCHEMA.md](docs/SCHEMA.md)) in `data/srd/`.
-- `npm run data:import` — additionally ingests any 5etools-format JSON you place in
-  `data/sources/` and local `dnd-data` JSON exports in `data/` (your files, your
-  machine—both are gitignored). It resolves inheritance/lore across files and emits a
-  machine-readable coverage report at `data/sources/_normalized/import-report.json`.
-- Duplicates resolve automatically: when the same entry exists in several sources, the
-  one closest to official material wins (SRD → official book codes → open packs → other),
-  with explicit aliases/reprints and structural fingerprints used conservatively.
+- `npm run data:import` — ingests 5etools-format JSON in `data/sources/`, local
+  `dnd-data` exports in `data/`, and the manually curated Markdown collection in
+  `data/pdfs/` (all gitignored). JSON inheritance/lore and Markdown prose, stat blocks,
+  class progressions, glossary records, and captioned tables normalize into one schema.
+  Reports are written to `_normalized/import-report.json` and `markdown-report.json`.
+- Duplicates resolve automatically. Personal Markdown wins matching 2024 conflicts and
+  JSON fills genuinely absent keys; JSON leads only when a deterministic completeness
+  check finds it materially more complete. Explicit nulls and empty movement modes are
+  not treated as gaps. Other sources retain the established source priority.
 - `GET /api/compendium/audit` exposes the latest import gaps and boot-time dedupe totals.
 
 ## Architecture
@@ -56,7 +59,7 @@ npm run test:all   # both
 
 ## License note
 
-App code is yours to use personally. Game data is rebuilt at install time from the
-sources above under their respective licenses (CC-BY-4.0 / OGL 1.0a); this repository
-redistributes none of it, and nothing you place in `data/sources/`, `data/pdfs/`, or
-`reference/` is ever committed.
+App code is yours to use personally. Open game data is rebuilt at install time under
+its respective licenses. Personal inputs under `data/sources/`, `data/pdfs/`, and
+`reference/` are processed locally and remain outside commits unless explicitly
+authorized for publication by path.

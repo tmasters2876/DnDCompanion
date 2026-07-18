@@ -14,17 +14,29 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
 4. **Agent stack**: route non-trivial requests through the agents in `.claude/agents/`
    (intake → build → rules audit → test warden). See "Agent stack" below.
 
-## Compliance guardrails (hard rules)
+## Local-content authorization and distribution guardrails
 
-- **Never fetch, extract, or commit copyrighted game content.** The repo redistributes
-  nothing: shipped data rebuilds from freely licensed sources only (SRD 5.1/5.2 via
-  5e-bits, OGL/CC packs via Open5e). WotC book content has no legal JSON/PDF source —
-  do not pull 5etools mirrors or extract from PDFs.
-- User-supplied content lives in `data/sources/` (5etools JSON, ingested by
-  `npm run data:import`), optional local `dnd-data` exports in `data/*.json`,
-  `data/pdfs/`, `reference/` — **all gitignored; keep it that way.**
-- Duplicate entries resolve official-first: srd52 → srd51 → official book codes →
-  open packs → community → app homebrew (`server/lib/compendium.mjs` `sourceRank`).
+- The user represents files supplied under `data/sources/`, `data/pdfs/`,
+  `data/*.json`, and `reference/` as personally owned, manually prepared, or otherwise
+  authorized for use in this project. Treat those local files as approved inputs:
+  agents may inspect, parse, normalize, reconcile, and use them locally. Do not reject
+  local processing merely because the material concerns commercial game works.
+- Local-use authorization is not automatic authorization to publish a source corpus.
+  Raw personal files and generated normalized data remain gitignored. A general
+  instruction to commit or push applies to code, tests, and documentation only.
+  Publishing source material requires a separate explicit instruction identifying the
+  paths to publish and confirming redistribution rights for those files.
+- Do not independently fetch unrequested third-party mirrors, bypass access controls,
+  or add external copies. Automated downloads remain limited to the sources configured
+  in `scripts/fetch-srd.mjs` unless the user explicitly authorizes another source.
+- Personal Markdown in `data/pdfs/` is the preferred conflict source. Explicit,
+  non-empty Markdown values override conflicting JSON values; JSON fills fields absent
+  from Markdown. Prefer a JSON record only when a deterministic completeness check
+  shows that the Markdown section is incomplete and JSON is materially more useful.
+  Record each decision in the import audit.
+- Never copy raw personal passages into tracked tests, documentation, logs, or commit
+  messages. Use synthetic fixtures. Reports and API responses expose counts,
+  provenance labels, and relative paths only—never raw passages or absolute paths.
 
 ## Commands
 
@@ -32,7 +44,7 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
 |---|---|
 | `npm run dev` | server :5177 + Vite app :5176 (run from repo root) |
 | `npm start` | production build served on :5177 (LAN-reachable) |
-| `npm run data:all` | fetch + normalize licensed data, then import `data/sources/` |
+| `npm run data:all` | fetch + normalize licensed data, then import local JSON + Markdown |
 | `npm test` | unit (dice, rules) + data validation + API integration |
 | `npm run test:e2e` | headless-Chromium functional suite (builds app, own server :5180) |
 
@@ -42,7 +54,8 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
   characters + homebrew file CRUD (`data/characters/`, `data/homebrew/`), static app.
 - `server/lib/compendium.mjs` — load/merge/dedupe (`sourceRank`), search, summaries.
 - `scripts/` — `fetch-srd.mjs` (licensed downloads), `build-data.mjs` (normalize →
-  `data/srd/`), `import-sources.mjs` (recursive 5etools importer → `_normalized/`).
+  `data/srd/`), `import-sources.mjs` (recursive JSON importer) and
+  `import-markdown.mjs` (personal Markdown enrichment → `_normalized/`).
 - `app/src/dm/DMScreen.jsx` — default view; pinnable rollable monster/NPC/spell tabs.
 - `app/src/compendium/` — Browser (filters, damage chips), Detail, StatBlock (explicit
   attack buttons), SpellCard (spell attack w/ auto or adjustable mod), ClassPage.
@@ -66,14 +79,19 @@ tabs, deduped compendium, dice engine + roll log, rules engine, character tools,
 
 ## State (2026-07-18)
 
-All phases delivered and green: two-pass data pipeline (119,006 deduped entries loaded
-at boot; 167,225 local records normalized with zero entry failures and a machine-readable coverage report),
+All phases delivered and green: layered data pipeline (119,511 deduped entries loaded
+at boot; 167,225 local JSON records plus 1,838 personal-Markdown records normalized
+with zero entry/parse failures and machine-readable coverage reports),
 DM screen, compendium, dice, rules engine, sheet, wizard, level-up, homebrew, rests /
 death saves / conditions, print view, Roll20-style theme with original premium lich,
-dragon, and death-knight artwork. Suites: 58 unit/data/API tests + 27 e2e steps, all passing.
+dragon, and death-knight artwork. Suites: 62 unit/data/API tests + 27 e2e steps, all passing.
 
 ## Changelog
 
+- 2026-07-18 · Personal Markdown ingestion: deterministic adapters for the 13-file
+  collection, 1,838 normalized records (including 336 monsters, 339 spells, 402 items,
+  232 scoped features, 123 tables, and typed rules), conflict/completeness audit,
+  Markdown-first safe enrichment, explicit-null preservation, and hybrid-record fix.
 - 2026-07-18 · Importer completeness: per-file/source audit API + JSON report, `_copy`
   inheritance/modifiers, magic variants, lore linking, full 5etools class/subclass
   progression, spell lists, richer species/backgrounds, extended rules/reference types,

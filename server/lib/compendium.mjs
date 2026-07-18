@@ -26,8 +26,8 @@ const SUMMARY_FIELDS = {
   recipe: (d) => ({ category: d.category }),
 };
 
-// Duplicate resolution: when the same (type, slug, edition) exists in several
-// sources, keep the one closest to official material.
+// Duplicate resolution. Ordinary source conflicts keep one record intact; the
+// user's local Markdown is the only layer eligible for field-level enrichment.
 const OFFICIAL_CODES = new Set([
   'phb', 'xphb', 'dmg', 'xdmg', 'mm', 'xmm', 'tce', 'xge', 'scag', 'vgm', 'vgtm',
   'mtf', 'mtof', 'mpmm', 'ftd', 'erlw', 'egw', 'ggr', 'ai', 'scc', 'bgg', 'sais',
@@ -46,7 +46,7 @@ export const sourceRank = (key) =>
 
 const stable = (value) => {
   if (Array.isArray(value)) return value.map(stable);
-  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().filter((key) => key !== 'lore' && key !== 'identity').map((key) => [key, stable(value[key])]));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().filter((key) => !['lore', 'identity', 'provenance', 'markdownFile', 'headingPath', 'contentHash', 'parserVersion'].includes(key)).map((key) => [key, stable(value[key])]));
   return value;
 };
 const fingerprint = (entry) => createHash('sha256').update(JSON.stringify({ type: entry.type, edition: entry.edition, data: stable(entry.data), text: entry.text.trim().replace(/\s+/g, ' ') })).digest('hex').slice(0, 20);
@@ -55,6 +55,95 @@ const identitySlugs = (entry) => new Set([
   ...(entry.data?.identity?.aliases ?? []).map((name) => String(name).split('|')[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')),
   ...(entry.data?.identity?.reprints ?? []).map((name) => String(name).split('|')[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')),
 ].filter(Boolean));
+
+const isMissing = (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0);
+const structuredScore = (value, depth = 0) => {
+  if (isMissing(value)) return 0;
+  if (typeof value !== 'object') return 1;
+  if (depth > 4) return 0;
+  if (Array.isArray(value)) return Math.min(20, value.reduce((sum, item) => sum + structuredScore(item, depth + 1), 0));
+  return Object.entries(value)
+    .filter(([key]) => !['identity', 'lore', 'provenance'].includes(key))
+    .reduce((sum, [, child]) => sum + structuredScore(child, depth + 1), 0);
+};
+
+export function entryQuality(entry) {
+  const textScore = Math.min(20, Math.sqrt((entry.text ?? '').trim().length) / 5);
+  const dataScore = structuredScore(entry.data) * 2;
+  const required = {
+    spell: ['level', 'school', 'castingTime', 'range', 'components', 'duration'],
+    monster: ['ac', 'hp', 'speed', 'abilities', 'cr', 'actions'],
+    class: ['hitDie', 'saves', 'proficiencies', 'levels'],
+    species: ['size', 'speed', 'traits'],
+    background: ['abilityScores', 'skills', 'equipment'],
+    item: ['itemType'],
+  }[entry.type] ?? [];
+  const completeness = required.filter((field) => !isMissing(entry.data?.[field])).length * 8;
+  return dataScore + textScore + completeness - (entry.data?.partial ? 20 : 0);
+}
+
+function mergeAbsent(primary, secondary) {
+  if (Array.isArray(primary) || Array.isArray(secondary) || !primary || !secondary || typeof primary !== 'object' || typeof secondary !== 'object') return primary;
+  const merged = structuredClone(primary);
+  for (const [key, value] of Object.entries(secondary)) {
+    if (!Object.hasOwn(merged, key)) merged[key] = structuredClone(value);
+    else if (merged[key] && value && !Array.isArray(merged[key]) && !Array.isArray(value)
+      && typeof merged[key] === 'object' && typeof value === 'object') merged[key] = mergeAbsent(merged[key], value);
+  }
+  return merged;
+}
+
+function requiredCoverage(entry) {
+  const required = {
+    spell: ['level', 'school', 'castingTime', 'range', 'components', 'duration'],
+    monster: ['ac', 'hp', 'speed', 'abilities', 'cr', 'actions'],
+    class: ['hitDie', 'saves', 'proficiencies', 'levels'],
+    species: ['size', 'speed', 'traits'],
+    background: ['abilityScores', 'skills', 'equipment'],
+    item: ['itemType'],
+  }[entry.type] ?? [];
+  return required.filter((field) => !isMissing(entry.data?.[field])).length;
+}
+
+function jsonMateriallyDominates(personal, json) {
+  if (json.data?.partial) return false;
+  const personalStructure = structuredScore(personal.data);
+  const jsonStructure = structuredScore(json.data);
+  const personalText = (personal.text ?? '').trim().length;
+  const jsonText = (json.text ?? '').trim().length;
+  return requiredCoverage(json) >= requiredCoverage(personal)
+    && jsonStructure >= Math.max(personalStructure + 2, personalStructure * 1.25)
+    && jsonText >= personalText * 0.9;
+}
+
+export function choosePreferred(a, b) {
+  const aPersonal = a.source?.key === 'personal-md';
+  const bPersonal = b.source?.key === 'personal-md';
+  let primary;
+  if (aPersonal !== bPersonal) {
+    const personal = aPersonal ? a : b;
+    const json = aPersonal ? b : a;
+    // Markdown wins every tie. JSON leads only when it is demonstrably more
+    // complete in mechanics and narrative, rather than merely more verbose data.
+    primary = jsonMateriallyDominates(personal, json) ? json : personal;
+  } else {
+    const rankDelta = sourceRank(a.source.key) - sourceRank(b.source.key);
+    primary = rankDelta < 0 ? a : rankDelta > 0 ? b : entryQuality(a) >= entryQuality(b) ? a : b;
+  }
+  const secondary = primary === a ? b : a;
+  const hasPersonal = aPersonal || bPersonal;
+  const personal = aPersonal ? a : bPersonal ? b : null;
+  const richerText = hasPersonal && (personal.text ?? '').trim().length >= (primary.text ?? '').trim().length
+    ? personal.text : primary.text;
+  return {
+    ...primary,
+    text: richerText,
+    data: {
+      ...(hasPersonal ? mergeAbsent(primary.data ?? {}, secondary.data ?? {}) : primary.data),
+      provenance: [...new Set([primary.source?.key, secondary.source?.key, ...(primary.data?.provenance ?? []), ...(secondary.data?.provenance ?? [])].filter(Boolean))],
+    },
+  };
+}
 
 export function loadCompendium(dataDir) {
   const byId = new Map();
@@ -87,7 +176,8 @@ export function loadCompendium(dataDir) {
     const key = `${entry.type}/${entry.slug}/${entry.edition}`;
     const cur = winners.get(key);
     if (cur) identityDuplicates++;
-    if (!cur || sourceRank(entry.source.key) < sourceRank(cur.source.key)) winners.set(key, entry);
+    if (!cur) winners.set(key, entry);
+    else winners.set(key, choosePreferred(cur, entry));
   }
 
   // A second, conservative pass catches explicit aliases/reprints with identical
@@ -101,7 +191,7 @@ export function loadCompendium(dataDir) {
     if (!cur || !overlaps) structural.set(cur && !overlaps ? `${key}/${winnerKey}` : key, { winnerKey, entry });
     else {
       structuralDuplicates++;
-      if (sourceRank(entry.source.key) < sourceRank(cur.entry.source.key)) structural.set(key, { winnerKey, entry });
+      structural.set(key, { winnerKey, entry: choosePreferred(cur.entry, entry) });
     }
   }
 

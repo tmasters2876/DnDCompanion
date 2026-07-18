@@ -145,4 +145,7 @@ test('audit endpoint exposes importer gaps and boot dedupe metrics', async () =>
   assert.ok(body.summary.copies.found >= body.summary.copies.resolved);
   assert.equal(typeof body.unsupportedByKey, 'object');
   assert.ok(body.dedupeAtBoot.rawIds > 0);
+  assert.ok(body.markdown?.summary.filesScanned > 0);
+  assert.equal(body.markdown.sourceDirectory, 'data/pdfs');
+  assert.doesNotMatch(JSON.stringify(body), /\/Users\/|sourceDirectory":"\//);
 });

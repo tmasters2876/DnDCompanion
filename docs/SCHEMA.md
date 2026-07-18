@@ -1,16 +1,21 @@
 # Internal compendium schema
 
 Everything downstream of the importers (server API, builder, sheet, drawer, stat blocks)
-reads **only** this schema. Raw-source quirks (5e-bits, Open5e, 5etools) stay inside
-`scripts/build-data.mjs` and `scripts/import-sources.mjs`.
+reads **only** this schema. Raw-source quirks (5e-bits, Open5e, 5etools, personal
+Markdown) stay inside the scripts under `scripts/`.
 
 ## Files
 
 - `data/srd/<type>.json` — shipped, built by `npm run data:build`. One JSON array per type.
-- `data/sources/<type>.json` — built by `npm run data:import` from user-supplied 5etools files.
+- `data/sources/_normalized/<type>.json` — built from user-supplied JSON.
+- `data/sources/_normalized/markdown-<type>.json` — built from local Markdown.
 - `data/homebrew/<id>.json` — one entry per file, created by the app.
 
-The server merges all three at startup (srd → sources → homebrew, later wins on id conflict).
+The server merges all three at startup and resolves canonical `(type, slug, edition)`
+identities. Personal Markdown is authoritative unless a JSON entry is deterministically
+more complete. Only absent object keys are backfilled; explicit nulls, empty arrays, and
+stat-block omissions remain meaningful. Other source families are selected intact and
+are not recursively hybridized.
 
 ## Entry envelope
 
@@ -31,6 +36,10 @@ Every entry, regardless of type:
   "text": "…"                       // full rules text, markdown; used for search + detail pages
 }
 ```
+
+Local Markdown entries also record non-content provenance in `data`: `markdownFile`,
+`headingPath`, `contentHash`, `parserVersion`, and a `provenance` source-key list. These
+fields are excluded from structural fingerprints.
 
 **Edition layering:** entries in different editions with the same `(type, slug)` are the
 same identity. The API resolves to the 2024 entry by default; 2014 shows with a `legacy`

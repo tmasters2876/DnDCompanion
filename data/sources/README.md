@@ -11,6 +11,10 @@ Normalized output lands in `_normalized/` (gitignored) and the server picks it u
 restart. Files that fail to parse are reported and skipped — one bad file never blocks
 the rest.
 
+The same command also runs `scripts/import-markdown.mjs` over authorized local `.md`
+files in `data/pdfs/`. Its output uses `markdown-<type>.json` filenames and its separate
+coverage/conflict report is `_normalized/markdown-report.json`.
+
 The importer is a two-pass resolver. It indexes the whole source tree before mapping,
 so `_copy` inheritance, copy modifiers, fluff/lore references, class spell lists, and
 book/adventure bodies can resolve across files. It also reads user-supplied

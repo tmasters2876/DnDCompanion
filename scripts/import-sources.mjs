@@ -753,7 +753,8 @@ const duplicateIds = [...entryOrigins].filter(([, origins]) => origins.length > 
 const report = {
   version: 2,
   generatedAt: new Date().toISOString(),
-  sourceDirectory: SRC,
+  // Never expose an absolute local path through the audit API.
+  sourceDirectory: process.env.DND_SOURCE_DIR ? '.' : 'data/sources',
   summary: {
     filesScanned: files.length,
     filesParsed: documents.length,
